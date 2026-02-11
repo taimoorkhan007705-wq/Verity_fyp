@@ -1,6 +1,16 @@
 import { useState } from 'react'
 import { useLocation, useNavigate } from 'react-router-dom'
-import { Home, MessageCircle, Users, Compass, PlusSquare, User, Settings, LogOut } from 'lucide-react'
+import { 
+  Home, 
+  MessageCircle, 
+  Users, 
+  Compass, 
+  PlusSquare, 
+  User, 
+  Settings, 
+  LogOut, 
+  LayoutDashboard // Added this icon
+} from 'lucide-react'
 import { useAuth } from '../context/AuthContext'
 import {
   SidebarContainer,
@@ -35,6 +45,9 @@ function Sidebar({ isOpen, setsidebarOpen }) {
   const { user, logout } = useAuth()
   const [menuOpen, setMenuOpen] = useState(false)
 
+  // In a real app, this comes from user object: user?.role === "Business"
+  const isBusinessUser = user?.role === "Business" || true; 
+
   const handleLogoClick = () => {
     setsidebarOpen(!isOpen)
   }
@@ -51,6 +64,7 @@ function Sidebar({ isOpen, setsidebarOpen }) {
 
   // Check if route is active
   const isFeedActive = location.pathname === '/feed' || location.pathname === '/'
+  const isDashboardActive = location.pathname === '/dashboard' // New active state
   const isMessagesActive = location.pathname.startsWith('/messages')
   const isConnectionsActive = location.pathname === '/connections'
   const isDiscoverActive = location.pathname === '/discover'
@@ -76,6 +90,14 @@ function Sidebar({ isOpen, setsidebarOpen }) {
             <Home />
             <span>Feed</span>
           </Feed_Button>
+
+          {/* Business Dashboard Button (Conditional) */}
+          {isBusinessUser && (
+            <Feed_Button to="/dashboard" $isActive={isDashboardActive} $isOpen={isOpen}>
+              <LayoutDashboard />
+              <span>Business Desk</span>
+            </Feed_Button>
+          )}
 
           {/* Messages Button */}
           <Messages_Button to="/messages" $isActive={isMessagesActive} $isOpen={isOpen}>
@@ -114,8 +136,8 @@ function Sidebar({ isOpen, setsidebarOpen }) {
         <UserProfileButton onClick={() => setMenuOpen(!menuOpen)}>
           <UserAvatar src={user?.avatar} alt={user?.name} />
           <UserInfo $isOpen={isOpen}>
-            <UserName>{user?.name}</UserName>
-            <UserEmail>{user?.email}</UserEmail>
+            <UserName>{user?.name || "Business Owner"}</UserName>
+            <UserEmail>{user?.email || "business@verity.com"}</UserEmail>
           </UserInfo>
           <LogoutIconButton 
             $isOpen={isOpen}
