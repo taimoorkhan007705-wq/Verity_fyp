@@ -1,190 +1,171 @@
-import React, { useState, useRef } from "react";
+import React, { useState } from "react";
 import { 
-  Plus, Trash2, Search, X, ExternalLink,
-  Image as ImageIcon, Video, Play, Upload, 
-  CheckCircle2, Briefcase
+  LayoutDashboard, Package, MessageSquare, TrendingUp, 
+  Plus, LogOut, X, Link as LinkIcon, Send, ImageIcon, Video, Search, MoreVertical, Phone, Video as VideoCall, Trash2
 } from "lucide-react";
 
-const BusinessDashboard = () => {
-  const [isFormOpen, setIsFormOpen] = useState(false);
-  const [selectedProduct, setSelectedProduct] = useState(null); 
-  const [searchQuery, setSearchQuery] = useState("");
-  const [mediaType, setMediaType] = useState("image");
-  const [previewUrl, setPreviewUrl] = useState(null);
-  const fileInputRef = useRef(null);
+const BusinessDashboard = ({ onLogout }) => {
+  const [activeTab, setActiveTab] = useState("messages"); 
+  const [showAddForm, setShowAddForm] = useState(false);
   
-  const [products, setProducts] = useState([
-    { 
-      id: 1, 
-      name: "Smart Watch Enterprise", 
-      price: "12,500", 
-      type: "image",
-      url: "https://images.unsplash.com/photo-1523275335684-37898b6baf30?q=80&w=300",
-      link: "https://amazon.com"
-    }
-  ]);
+  // --- PRODUCT STORAGE ---
+  const [myProducts, setMyProducts] = useState([]);
 
-  const [form, setForm] = useState({ name: "", price: "", link: "" });
+  // --- MESSAGES LOGIC (INSTAGRAM STYLE) ---
+  const [selectedChat, setSelectedChat] = useState(null);
+  const [newMessage, setNewMessage] = useState("");
+  const [chatHistory, setChatHistory] = useState({
+    1: [{ id: 101, text: "Is this still available?", sender: "customer", time: "10:00 AM" }],
+    2: [{ id: 201, text: "I want to buy the lake product.", sender: "customer", time: "09:30 AM" }]
+  });
 
-  const theme = {
-    teal: "#14b8a6", // From your sidebar
-    bg: "#f8fafc",
-    border: "#e2e8f0"
-  };
+  const contacts = [
+    { id: 1, name: "Ahmed Ali", avatar: "A", lastMsg: "Price?", time: "2m" },
+    { id: 2, name: "Sara Khan", avatar: "S", lastMsg: "Available?", time: "1h" },
+  ];
 
-  const s = {
-    container: { backgroundColor: theme.bg, minHeight: "100vh", fontFamily: "sans-serif", color: "#1e293b" },
-    nav: { backgroundColor: "white", padding: "20px 50px", display: "flex", justifyContent: "space-between", alignItems: "center", borderBottom: `1px solid ${theme.border}` },
-    formCard: { backgroundColor: "white", padding: "40px", borderRadius: "20px", border: `1px solid ${theme.border}`, marginBottom: "40px", boxShadow: "0 10px 15px -3px rgba(0,0,0,0.1)" },
-    input: { width: "100%", padding: "22px", fontSize: "20px", borderRadius: "12px", border: `2px solid #f1f5f9`, backgroundColor: "#f8fafc", boxSizing: "border-box", outline: "none", marginBottom: "25px", fontWeight: "600" },
-    upload: { border: `2px dashed ${theme.border}`, borderRadius: "15px", padding: "35px", textAlign: "center", cursor: "pointer", marginBottom: "25px" },
-    primaryBtn: { backgroundColor: theme.teal, color: "white", padding: "16px 32px", borderRadius: "12px", fontWeight: "700", border: "none", cursor: "pointer", fontSize: "16px", display: "flex", alignItems: "center", gap: "10px" },
-    row: { display: "flex", alignItems: "center", padding: "25px 45px", borderBottom: `1px solid #f1f5f9`, backgroundColor: "white", cursor: "pointer" },
-    modalOverlay: { position: "fixed", top: 0, left: 0, right: 0, bottom: 0, backgroundColor: "rgba(0,0,0,0.8)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 1000, padding: "20px" }
-  };
+  // --- FORM STATE (EXACTLY AS REQUESTED) ---
+  const [productData, setProductData] = useState({
+    title: "", price: "", description: "", category: "Electronics", stock: "", externalLink: "", imageFile: null, videoFile: null
+  });
 
-  const handleFileUpload = (e) => {
-    const file = e.target.files[0];
-    if (file) {
-      const url = URL.createObjectURL(file);
-      setPreviewUrl(url);
-    }
-  };
+  const theme = { teal: "#14b8a6", dark: "#0f172a", border: "#e2e8f0", bg: "#f1f5f9" };
 
-  const handleCreate = (e) => {
+  // --- FUNCTIONS ---
+  const handleSendMessage = (e) => {
     e.preventDefault();
-    const newItem = { 
-      id: Date.now(), 
-      ...form,
-      price: parseInt(form.price).toLocaleString(), 
-      type: mediaType, 
-      url: previewUrl || "https://via.placeholder.com/300" 
+    if (!newMessage.trim() || !selectedChat) return;
+    const msg = { id: Date.now(), text: newMessage, sender: "me", time: "Now" };
+    setChatHistory(prev => ({ ...prev, [selectedChat.id]: [...(prev[selectedChat.id] || []), msg] }));
+    setNewMessage("");
+  };
+
+  const handlePublish = (e) => {
+    e.preventDefault();
+    const newProduct = {
+      id: Date.now(),
+      ...productData,
+      preview: productData.imageFile ? URL.createObjectURL(productData.imageFile) : null
     };
-    setProducts([newItem, ...products]);
-    setForm({ name: "", price: "", link: "" });
-    setPreviewUrl(null);
-    setIsFormOpen(false);
+    setMyProducts([newProduct, ...myProducts]);
+    setShowAddForm(false);
+    setActiveTab("inventory");
+    setProductData({ title: "", price: "", description: "", category: "Electronics", stock: "", externalLink: "", imageFile: null, videoFile: null });
   };
 
   return (
-    <div style={s.container}>
-      <nav style={s.nav}>
-        <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
-          <Briefcase size={28} color={theme.teal} />
-          <h1 style={{ margin: 0, fontSize: "24px", fontWeight: "800" }}>Business Dashboard</h1>
+    <div style={{ display: "flex", width: "100vw", height: "100vh", overflow: "hidden", backgroundColor: theme.bg, fontFamily: "sans-serif" }}>
+      
+      {/* SIDEBAR */}
+      <aside style={{ width: "280px", minWidth: "280px", backgroundColor: theme.dark, color: "white", display: "flex", flexDirection: "column", padding: "30px 20px", height: "100vh" }}>
+        <div style={{ display: "flex", alignItems: "center", gap: "12px", marginBottom: "50px" }}>
+          <div style={{ backgroundColor: theme.teal, padding: "8px", borderRadius: "10px" }}><TrendingUp size={24} color="white" /></div>
+          <span style={{ fontWeight: "900", fontSize: "20px" }}>SELLER STUDIO</span>
         </div>
-        <button onClick={() => setIsFormOpen(!isFormOpen)} style={s.primaryBtn}>
-          {isFormOpen ? <X size={20}/> : <Plus size={20}/>} {isFormOpen ? "Cancel" : "Add Product"}
-        </button>
-      </nav>
+        <nav style={{ flex: 1 }}>
+          <div onClick={() => setActiveTab("overview")} style={navLinkStyle(activeTab === "overview", theme)}><LayoutDashboard size={20}/> Dashboard</div>
+          <div onClick={() => setActiveTab("inventory")} style={navLinkStyle(activeTab === "inventory", theme)}><Package size={20}/> My Products</div>
+          <div onClick={() => setActiveTab("messages")} style={navLinkStyle(activeTab === "messages", theme)}><MessageSquare size={20}/> Messages</div>
+        </nav>
+        <button onClick={onLogout} style={{ background: "none", border: "none", color: "#f87171", cursor: "pointer", fontWeight: "800" }}><LogOut size={20}/> Log Out</button>
+      </aside>
 
-      <div style={{ maxWidth: "1000px", margin: "0 auto", padding: "50px 20px" }}>
-        
-        {isFormOpen && (
-          <div style={s.formCard}>
-            <form onSubmit={handleCreate}>
-              <p style={{ fontWeight: "800", marginBottom: "10px", fontSize: "14px", color: "#64748b", textTransform: "uppercase" }}>Product Title</p>
-              <input required style={s.input} placeholder="Enter name" value={form.name} onChange={(e)=>setForm({...form, name: e.target.value})} />
-              
-              <div style={{ display: "flex", gap: "25px" }}>
-                <div style={{ flex: 1 }}>
-                  <p style={{ fontWeight: "800", marginBottom: "10px", fontSize: "14px", color: "#64748b", textTransform: "uppercase" }}>Price (PKR)</p>
-                  <input required type="number" style={s.input} placeholder="Rs." value={form.price} onChange={(e)=>setForm({...form, price: e.target.value})} />
-                </div>
-                <div style={{ flex: 1 }}>
-                  <p style={{ fontWeight: "800", marginBottom: "10px", fontSize: "14px", color: "#64748b", textTransform: "uppercase" }}>Content Type</p>
-                  <div style={{ display: "flex", gap: "10px", backgroundColor: "#f1f5f9", padding: "8px", borderRadius: "12px" }}>
-                    <button type="button" onClick={() => setMediaType("image")} style={{ flex: 1, padding: "12px", borderRadius: "8px", border: "none", cursor: "pointer", fontWeight: "700", backgroundColor: mediaType === "image" ? theme.teal : "transparent", color: mediaType === "image" ? "white" : "#64748b" }}>Image</button>
-                    <button type="button" onClick={() => setMediaType("video")} style={{ flex: 1, padding: "12px", borderRadius: "8px", border: "none", cursor: "pointer", fontWeight: "700", backgroundColor: mediaType === "video" ? theme.teal : "transparent", color: mediaType === "video" ? "white" : "#64748b" }}>Video</button>
+      {/* MAIN CONTENT AREA */}
+      <main style={{ flex: 1, display: "flex", flexDirection: "column", height: "100vh", overflow: "hidden" }}>
+        <header style={{ padding: "20px 40px", display: "flex", justifyContent: "space-between", alignItems: "center", backgroundColor: "white", borderBottom: `1px solid ${theme.border}` }}>
+          <h1 style={{ fontSize: "24px", fontWeight: "900" }}>{activeTab.toUpperCase()}</h1>
+          <button onClick={() => setShowAddForm(true)} style={primaryBtn(theme)}><Plus size={20}/> Create Business Listing</button>
+        </header>
+
+        <section style={{ flex: 1, padding: "30px", overflow: "hidden" }}>
+          
+          {/* MESSAGES TAB (INSTAGRAM STYLE) */}
+          {activeTab === "messages" && (
+            <div style={{ display: "flex", backgroundColor: "white", borderRadius: "24px", height: "100%", overflow: "hidden", border: `1px solid ${theme.border}` }}>
+              <div style={{ width: "320px", borderRight: `1px solid ${theme.border}`, overflowY: "auto" }}>
+                {contacts.map(c => (
+                  <div key={c.id} onClick={() => setSelectedChat(c)} style={{ padding: "20px", cursor: "pointer", backgroundColor: selectedChat?.id === c.id ? "#f0fdfa" : "white", borderBottom: `1px solid ${theme.bg}` }}>
+                    <div style={{ fontWeight: "800" }}>{c.name}</div>
+                    <div style={{ fontSize: "12px", color: "#64748b" }}>{c.lastMsg}</div>
                   </div>
+                ))}
+              </div>
+              <div style={{ flex: 1, display: "flex", flexDirection: "column" }}>
+                {selectedChat ? (
+                  <>
+                    <div style={{ flex: 1, padding: "20px", overflowY: "auto", display: "flex", flexDirection: "column", gap: "10px", backgroundColor: "#f8fafc" }}>
+                      {(chatHistory[selectedChat.id] || []).map(m => (
+                        <div key={m.id} style={{ alignSelf: m.sender === "me" ? "flex-end" : "flex-start", backgroundColor: m.sender === "me" ? theme.teal : "white", color: m.sender === "me" ? "white" : "black", padding: "10px 15px", borderRadius: "15px", maxWidth: "70%" }}>{m.text}</div>
+                      ))}
+                    </div>
+                    <form onSubmit={handleSendMessage} style={{ padding: "20px", display: "flex", gap: "10px", borderTop: `1px solid ${theme.border}` }}>
+                      <input value={newMessage} onChange={(e) => setNewMessage(e.target.value)} style={{ flex: 1, padding: "12px", borderRadius: "20px", border: `1px solid ${theme.border}` }} placeholder="Message..." />
+                      <button type="submit" style={{ backgroundColor: theme.teal, color: "white", border: "none", borderRadius: "50%", width: "40px", height: "40px" }}><Send size={18}/></button>
+                    </form>
+                  </>
+                ) : <div style={{ margin: "auto", color: "#94a3b8" }}>Select a chat</div>}
+              </div>
+            </div>
+          )}
+
+          {/* MY PRODUCTS TAB (INVENTORY) */}
+          {activeTab === "inventory" && (
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(250px, 1fr))", gap: "20px" }}>
+              {myProducts.map(p => (
+                <div key={p.id} style={{ backgroundColor: "white", padding: "15px", borderRadius: "20px", boxShadow: "0 2px 10px rgba(0,0,0,0.05)" }}>
+                  <div style={{ height: "150px", backgroundColor: "#f1f5f9", borderRadius: "10px", overflow: "hidden", marginBottom: "10px" }}>
+                    {p.preview && <img src={p.preview} style={{ width: "100%", height: "100%", objectFit: "cover" }} />}
+                  </div>
+                  <h4 style={{ margin: "0" }}>{p.title}</h4>
+                  <p style={{ color: theme.teal, fontWeight: "900" }}>Rs. {p.price}</p>
                 </div>
-              </div>
-
-              <p style={{ fontWeight: "800", marginBottom: "10px", fontSize: "14px", color: "#64748b", textTransform: "uppercase" }}>Store Link (Amazon/Shopify)</p>
-              <input style={s.input} placeholder="Paste link here..." value={form.link} onChange={(e)=>setForm({...form, link: e.target.value})} />
-
-              <div style={s.upload} onClick={() => fileInputRef.current.click()}>
-                <input type="file" ref={fileInputRef} hidden accept={mediaType === "image" ? "image/*" : "video/*"} onChange={handleFileUpload} />
-                {previewUrl ? (
-                  <p style={{ color: theme.teal, fontWeight: "800", margin: 0 }}><CheckCircle2 size={18} inline /> File Attached</p>
-                ) : (
-                  <p style={{ margin: 0, fontWeight: "700", color: "#64748b" }}><Upload size={24} style={{marginBottom:'10px'}} /> <br/> Tap to upload from Device</p>
-                )}
-              </div>
-
-              <button type="submit" style={{ ...s.primaryBtn, width: "100%", padding: "24px", justifyContent: "center", fontSize: "18px" }}>
-                Confirm & List Product
-              </button>
-            </form>
-          </div>
-        )}
-
-        <div style={{ borderRadius: "15px", overflow: "hidden", border: `1px solid ${theme.border}` }}>
-          <div style={{ backgroundColor: "white", padding: "25px 45px", borderBottom: `2px solid ${theme.bg}`, display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-            <h3 style={{ margin: 0, fontSize: "20px", fontWeight: "800" }}>Manage Inventory</h3>
-            <div style={{ position: "relative" }}>
-              <Search size={18} style={{ position: "absolute", left: "15px", top: "12px", color: "#cbd5e1" }} />
-              <input placeholder="Search..." style={{ padding: "12px 15px 12px 45px", borderRadius: "10px", border: `1px solid ${theme.border}`, outline: "none", width: "250px" }} value={searchQuery} onChange={(e)=>setSearchQuery(e.target.value)} />
+              ))}
             </div>
-          </div>
+          )}
+        </section>
+      </main>
 
-          {products.filter(p => p.name.toLowerCase().includes(searchQuery.toLowerCase())).map((p) => (
-            <div key={p.id} style={s.row} onClick={() => setSelectedProduct(p)}>
-              <div style={{ width: "70px", height: "70px", borderRadius: "12px", overflow: "hidden", border: `1px solid ${theme.border}`, display: "flex", alignItems: "center", justifyContent: "center" }}>
-                {p.type === "image" ? (
-                  <img src={p.url} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
-                ) : (
-                  <Play color={theme.teal} size={24} />
-                )}
-              </div>
-              <div style={{ flex: 1, marginLeft: "25px" }}>
-                <p style={{ margin: "0 0 4px 0", fontSize: "18px", fontWeight: "700" }}>{p.name}</p>
-                <span style={{ fontSize: "12px", fontWeight: "800", color: theme.teal }}>{p.type.toUpperCase()}</span>
-              </div>
-              <div style={{ textAlign: "right", marginRight: "40px" }}>
-                <p style={{ margin: 0, fontSize: "20px", fontWeight: "800" }}>Rs. {p.price}</p>
-              </div>
-              <button 
-                onClick={(e) => { e.stopPropagation(); setProducts(products.filter(i => i.id !== p.id)); }} 
-                style={{ background: "none", border: "none", cursor: "pointer", color: "#cbd5e1" }}
-              >
-                <Trash2 size={22} />
-              </button>
-            </div>
-          ))}
-        </div>
-      </div>
-
-      {/* POPUP VIEW */}
-      {selectedProduct && (
-        <div style={s.modalOverlay} onClick={() => setSelectedProduct(null)}>
-          <div style={{ backgroundColor: "white", width: "100%", maxWidth: "550px", borderRadius: "28px", overflow: "hidden", position: "relative" }} onClick={(e) => e.stopPropagation()}>
-            <button onClick={() => setSelectedProduct(null)} style={{ position: "absolute", right: "20px", top: "20px", background: "white", border: "none", cursor: "pointer", borderRadius: "50%", padding: "8px", boxShadow: "0 4px 12px rgba(0,0,0,0.15)", zIndex: 10 }}>
-              <X size={24} />
-            </button>
-            <div style={{ height: "350px", backgroundColor: "#0f172a", display: "flex", alignItems: "center", justifyContent: "center" }}>
-              {selectedProduct.type === "image" ? (
-                <img src={selectedProduct.url} style={{ width: "100%", height: "100%", objectFit: "contain" }} />
-              ) : (
-                <video src={selectedProduct.url} controls autoPlay style={{ width: "100%", height: "100%" }} />
-              )}
-            </div>
-            <div style={{ padding: "40px" }}>
-              <h2 style={{ fontSize: "28px", fontWeight: "800", margin: "0 0 10px 0" }}>{selectedProduct.name}</h2>
-              <p style={{ fontSize: "32px", fontWeight: "900", color: theme.teal, margin: "0 0 25px 0" }}>Rs. {selectedProduct.price}</p>
-              {selectedProduct.link && (
-                <a href={selectedProduct.link} target="_blank" rel="noreferrer" style={{ textDecoration: "none" }}>
-                  <button style={{ ...s.primaryBtn, width: "100%", justifyContent: "center", padding: "22px" }}>
-                    <ExternalLink size={22} /> Visit External Store
-                  </button>
-                </a>
-              )}
-            </div>
+      {/* CREATE LISTING MODAL */}
+      {showAddForm && (
+        <div style={{ position: "fixed", inset: 0, backgroundColor: "rgba(0,0,0,0.8)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 2000 }}>
+          <div style={{ backgroundColor: "white", width: "800px", borderRadius: "32px", padding: "40px", maxHeight: "90vh", overflowY: "auto", position: "relative" }}>
+             <X onClick={() => setShowAddForm(false)} style={{ position: "absolute", right: "25px", top: "25px", cursor: "pointer" }} />
+             <h2 style={{ fontWeight: "900", marginBottom: "25px" }}>Create Business Listing</h2>
+             <form onSubmit={handlePublish}>
+                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "20px", marginBottom: "15px" }}>
+                  <div><label style={labelStyle}>Product Title</label><input style={inputStyle} value={productData.title} onChange={e => setProductData({...productData, title: e.target.value})} required /></div>
+                  <div><label style={labelStyle}>Price (PKR)</label><input style={inputStyle} value={productData.price} onChange={e => setProductData({...productData, price: e.target.value})} required /></div>
+                </div>
+                <div style={{ marginBottom: "15px" }}><label style={labelStyle}>Description</label><textarea style={{ ...inputStyle, height: "80px" }} value={productData.description} onChange={e => setProductData({...productData, description: e.target.value})} required /></div>
+                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "20px", marginBottom: "15px" }}>
+                  <div><label style={labelStyle}>Category</label><select style={inputStyle} value={productData.category} onChange={e => setProductData({...productData, category: e.target.value})}><option>Electronics</option><option>Automotive</option></select></div>
+                  <div><label style={labelStyle}>Stock</label><input style={inputStyle} type="number" value={productData.stock} onChange={e => setProductData({...productData, stock: e.target.value})} required /></div>
+                </div>
+                <div style={{ marginBottom: "15px" }}><label style={labelStyle}>External Link</label><input style={inputStyle} value={productData.externalLink} onChange={e => setProductData({...productData, externalLink: e.target.value})} /></div>
+                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "20px", marginBottom: "25px" }}>
+                   <div style={uploadBox}>
+                      <input type="file" accept="image/*" style={{ display: 'none' }} id="img" onChange={e => setProductData({...productData, imageFile: e.target.files[0]})} />
+                      <label htmlFor="img" style={{ cursor: 'pointer' }}><ImageIcon size={24}/> {productData.imageFile ? "Image Ready" : "Upload Image"}</label>
+                   </div>
+                   <div style={uploadBox}>
+                      <input type="file" accept="video/*" style={{ display: 'none' }} id="vid" onChange={e => setProductData({...productData, videoFile: e.target.files[0]})} />
+                      <label htmlFor="vid" style={{ cursor: 'pointer' }}><Video size={24}/> {productData.videoFile ? "Video Ready" : "Upload Video"}</label>
+                   </div>
+                </div>
+                <button type="submit" style={publishBtn(theme)}>Confirm & Publish</button>
+             </form>
           </div>
         </div>
       )}
     </div>
   );
 };
+
+const navLinkStyle = (active, theme) => ({ display: "flex", alignItems: "center", gap: "10px", padding: "12px 20px", borderRadius: "10px", cursor: "pointer", marginBottom: "5px", backgroundColor: active ? theme.teal : "transparent", color: active ? "white" : "#94a3b8", fontWeight: "700" });
+const labelStyle = { fontSize: "11px", fontWeight: "800", color: "#0f172a", marginBottom: "5px", display: "block", textTransform: "uppercase" };
+const inputStyle = { width: "100%", padding: "12px", borderRadius: "10px", border: "1px solid #e2e8f0", outline: "none", boxSizing: "border-box" };
+const uploadBox = { border: "1px dashed #cbd5e1", padding: "20px", borderRadius: "15px", textAlign: "center", backgroundColor: "#f8fafc", fontWeight: "700" };
+const primaryBtn = (theme) => ({ backgroundColor: theme.teal, color: "white", padding: "10px 20px", borderRadius: "10px", border: "none", fontWeight: "800", cursor: "pointer", display: "flex", gap: "8px" });
+const publishBtn = (theme) => ({ width: "100%", padding: "15px", backgroundColor: theme.teal, color: "white", borderRadius: "12px", border: "none", fontWeight: "900", cursor: "pointer" });
 
 export default BusinessDashboard;

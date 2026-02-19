@@ -91,14 +91,6 @@ function Sidebar({ isOpen, setsidebarOpen }) {
             <span>Feed</span>
           </Feed_Button>
 
-          {/* Business Dashboard Button (Conditional) */}
-          {isBusinessUser && (
-            <Feed_Button to="/dashboard" $isActive={isDashboardActive} $isOpen={isOpen}>
-              <LayoutDashboard />
-              <span>Business Desk</span>
-            </Feed_Button>
-          )}
-
           {/* Messages Button */}
           <Messages_Button to="/messages" $isActive={isMessagesActive} $isOpen={isOpen}>
             <MessageCircle />

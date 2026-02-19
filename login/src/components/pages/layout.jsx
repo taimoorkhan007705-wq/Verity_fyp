@@ -10,13 +10,14 @@ import {
   Overlay,
 } from "./Styled_components/Layout.styled";
 
-function Layout() {
+// onLogout prop yahan receive karein
+function Layout({ onLogout }) {
   const [sidebarOpen, setSidebarOpen] = useState(true);
 
   return (
     <LayoutContainer>
-      {/* Left Sidebar */}
-      <Sidebar isOpen={sidebarOpen} setsidebarOpen={setSidebarOpen} />
+      {/* Left Sidebar - Hum onLogout prop sidebar ko pass kar sakte hain */}
+      <Sidebar isOpen={sidebarOpen} setsidebarOpen={setSidebarOpen} onLogout={onLogout} />
 
       {/* Overlay for mobile when sidebar is open */}
       <Overlay $isOpen={sidebarOpen} onClick={() => setSidebarOpen(false)} />
@@ -28,6 +29,7 @@ function Layout() {
           {sidebarOpen ? <X /> : <Menu />}
         </MobileToggleButton>
 
+        {/* Is Outlet ke andar Feed.jsx, Profile.jsx etc nazar aayenge */}
         <Outlet />
       </MainContent>
 
