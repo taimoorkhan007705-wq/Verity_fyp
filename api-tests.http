@@ -1,0 +1,317 @@
+### Verity API Testing Suite
+### Use REST Client extension to run these tests
+### Click "Send Request" above each request
+
+@baseUrl = http://localhost:5000/api
+@token = YOUR_TOKEN_HERE
+
+#############################################
+# 1. AUTHENTICATION TESTS
+#############################################
+
+### 1.1 Signup as User
+POST {{baseUrl}}/auth/signup
+Content-Type: application/json
+
+{
+  "fullName": "Test User",
+  "email": "testuser@example.com",
+  "password": "password123",
+  "role": "User"
+}
+
+### 1.2 Signup as Reviewer
+POST {{baseUrl}}/auth/signup
+Content-Type: application/json
+
+{
+  "fullName": "Test Reviewer",
+  "email": "reviewer@example.com",
+  "password": "password123",
+  "role": "Reviewer"
+}
+
+### 1.3 Signup as Business
+POST {{baseUrl}}/auth/signup
+Content-Type: application/json
+
+{
+  "fullName": "Test Business",
+  "email": "business@example.com",
+  "password": "password123",
+  "role": "Business"
+}
+
+### 1.4 Login as User
+POST {{baseUrl}}/auth/login
+Content-Type: application/json
+
+{
+  "email": "testuser@example.com",
+  "password": "password123",
+  "role": "User"
+}
+
+### 1.5 Login as Reviewer
+POST {{baseUrl}}/auth/login
+Content-Type: application/json
+
+{
+  "email": "reviewer@example.com",
+  "password": "password123",
+  "role": "Reviewer"
+}
+
+### 1.6 Login with Wrong Role (Should Fail)
+POST {{baseUrl}}/auth/login
+Content-Type: application/json
+
+{
+  "email": "testuser@example.com",
+  "password": "password123",
+  "role": "Reviewer"
+}
+
+### 1.7 Login with Wrong Password (Should Fail)
+POST {{baseUrl}}/auth/login
+Content-Type: application/json
+
+{
+  "email": "testuser@example.com",
+  "password": "wrongpassword",
+  "role": "User"
+}
+
+#############################################
+# 2. USER PROFILE TESTS
+#############################################
+
+### 2.1 Get User Profile
+GET {{baseUrl}}/user/profile
+Authorization: Bearer {{token}}
+
+### 2.2 Update Profile (Text Only)
+PUT {{baseUrl}}/user/profile
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "firstName": "Updated",
+  "lastName": "Name",
+  "bio": "This is my updated bio",
+  "website": "https://example.com"
+}
+
+### 2.3 Update Profile with Image
+# Note: Use Thunder Client or Postman for file uploads
+# Or use curl:
+# curl -X PUT http://localhost:5000/api/user/profile \
+#   -H "Authorization: Bearer YOUR_TOKEN" \
+#   -F "firstName=Test" \
+#   -F "lastName=User" \
+#   -F "avatar=@/path/to/image.jpg"
+
+#############################################
+# 3. POST TESTS
+#############################################
+
+### 3.1 Create Post (Text Only)
+POST {{baseUrl}}/posts
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "content": "This is a test post #testing #verity",
+  "hashtags": ["testing", "verity"],
+  "visibility": "public"
+}
+
+### 3.2 Get Feed (Public Posts)
+GET {{baseUrl}}/posts/feed?page=1&limit=10
+
+### 3.3 Get Feed (Page 2)
+GET {{baseUrl}}/posts/feed?page=2&limit=10
+
+### 3.4 Get Post by ID
+GET {{baseUrl}}/posts/POST_ID_HERE
+Authorization: Bearer {{token}}
+
+### 3.5 Like Post
+POST {{baseUrl}}/posts/POST_ID_HERE/like
+Authorization: Bearer {{token}}
+
+### 3.6 Comment on Post
+POST {{baseUrl}}/posts/POST_ID_HERE/comment
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "text": "Great post!"
+}
+
+### 3.7 Delete Post
+DELETE {{baseUrl}}/posts/POST_ID_HERE
+Authorization: Bearer {{token}}
+
+#############################################
+# 4. STORY TESTS
+#############################################
+
+### 4.1 Get All Stories
+GET {{baseUrl}}/stories
+Authorization: Bearer {{token}}
+
+### 4.2 Get User Stories
+GET {{baseUrl}}/stories/user/USER_ID_HERE
+Authorization: Bearer {{token}}
+
+### 4.3 View Story (Increment View Count)
+POST {{baseUrl}}/stories/STORY_ID_HERE/view
+Authorization: Bearer {{token}}
+
+### 4.4 Delete Story
+DELETE {{baseUrl}}/stories/STORY_ID_HERE
+Authorization: Bearer {{token}}
+
+### 4.5 Create Story
+# Note: Use Thunder Client or curl for file uploads
+# curl -X POST http://localhost:5000/api/stories \
+#   -H "Authorization: Bearer YOUR_TOKEN" \
+#   -F "media=@/path/to/image.jpg" \
+#   -F "caption=My story caption"
+
+#############################################
+# 5. REVIEW TESTS (Reviewer Only)
+#############################################
+
+### 5.1 Get Pending Reviews
+GET {{baseUrl}}/reviews/pending
+Authorization: Bearer {{token}}
+
+### 5.2 Get Reviewer Stats
+GET {{baseUrl}}/reviews/stats
+Authorization: Bearer {{token}}
+
+### 5.3 Approve Post
+POST {{baseUrl}}/reviews/submit
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "postId": "POST_ID_HERE",
+  "verdict": "verified",
+  "notes": "Post looks legitimate",
+  "confidence": 90,
+  "sources": [],
+  "tags": ["approved"]
+}
+
+### 5.4 Reject Post
+POST {{baseUrl}}/reviews/submit
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "postId": "POST_ID_HERE",
+  "verdict": "false",
+  "notes": "Misinformation detected",
+  "confidence": 85,
+  "sources": ["https://factcheck.org"],
+  "tags": ["misinformation"]
+}
+
+### 5.5 Get Review History
+GET {{baseUrl}}/reviews/history
+Authorization: Bearer {{token}}
+
+#############################################
+# 6. ERROR TESTING
+#############################################
+
+### 6.1 Access Protected Route Without Token (Should Fail)
+GET {{baseUrl}}/user/profile
+
+### 6.2 Access Reviewer Route as User (Should Fail)
+GET {{baseUrl}}/reviews/pending
+Authorization: Bearer {{token}}
+
+### 6.3 Create Post Without Content (Should Fail)
+POST {{baseUrl}}/posts
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "hashtags": ["test"]
+}
+
+### 6.4 Login with Non-existent Email (Should Fail)
+POST {{baseUrl}}/auth/login
+Content-Type: application/json
+
+{
+  "email": "nonexistent@example.com",
+  "password": "password123",
+  "role": "User"
+}
+
+#############################################
+# 7. EDGE CASE TESTING
+#############################################
+
+### 7.1 Create Post with Very Long Content (Should Fail - Max 500 chars)
+POST {{baseUrl}}/posts
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "content": "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum. Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.",
+  "visibility": "public"
+}
+
+### 7.2 Update Profile with Very Long Bio (Should Fail - Max 150 chars)
+PUT {{baseUrl}}/user/profile
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "bio": "This is a very long bio that exceeds the maximum character limit of 150 characters. It should be rejected by the backend validation. Let's add more text to make sure it's over the limit."
+}
+
+### 7.3 Reviewer Try to Review Own Post (Should Fail)
+POST {{baseUrl}}/reviews/submit
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "postId": "YOUR_OWN_POST_ID",
+  "verdict": "verified",
+  "notes": "Trying to review my own post",
+  "confidence": 90
+}
+
+#############################################
+# NOTES
+#############################################
+
+# How to use:
+# 1. Install "REST Client" extension in VS Code
+# 2. After login, copy the token from response
+# 3. Replace {{token}} variable at the top with your actual token
+# 4. Click "Send Request" above any request to test
+# 5. Check response in the panel that opens
+
+# For file uploads (images/videos):
+# - Use Thunder Client extension (has UI for file uploads)
+# - Or use curl commands in terminal
+# - Or use Postman
+
+# Testing Workflow:
+# 1. Test authentication (signup/login)
+# 2. Copy token from login response
+# 3. Update @token variable above
+# 4. Test profile endpoints
+# 5. Test post creation and feed
+# 6. Test story creation and viewing
+# 7. Test review workflow (as reviewer)
+# 8. Test error cases
+# 9. Test edge cases
