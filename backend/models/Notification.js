@@ -1,7 +1,5 @@
 import mongoose from 'mongoose'
-
 const notificationSchema = new mongoose.Schema({
-  // Recipient
   user: {
     type: mongoose.Schema.Types.ObjectId,
     refPath: 'userModel',
@@ -12,8 +10,6 @@ const notificationSchema = new mongoose.Schema({
     required: true,
     enum: ['User', 'Reviewer', 'Business']
   },
-  
-  // Notification Details
   type: {
     type: String,
     required: true,
@@ -27,8 +23,6 @@ const notificationSchema = new mongoose.Schema({
     type: String,
     required: true
   },
-  
-  // Related Data
   relatedUser: {
     type: mongoose.Schema.Types.ObjectId,
     refPath: 'relatedUserModel'
@@ -44,13 +38,9 @@ const notificationSchema = new mongoose.Schema({
   relatedComment: {
     type: mongoose.Schema.Types.ObjectId
   },
-  
-  // Action
   actionUrl: {
     type: String
   },
-  
-  // Status
   isRead: {
     type: Boolean,
     default: false
@@ -59,9 +49,6 @@ const notificationSchema = new mongoose.Schema({
 }, {
   timestamps: true
 })
-
-// Index for performance
 notificationSchema.index({ user: 1, isRead: 1, createdAt: -1 })
-
 const Notification = mongoose.model('Notification', notificationSchema)
 export default Notification

@@ -41,44 +41,34 @@ import {
   UserMenuItem,
   SignOutButton,
 } from './Sidebar.styled'
-
 function Sidebar({ isOpen, setsidebarOpen }) {
   const location = useLocation()
   const navigate = useNavigate()
   const [user, setUser] = useState(null)
   const [menuOpen, setMenuOpen] = useState(false)
-
   useEffect(() => {
-    // Get current user from localStorage
     const currentUser = getCurrentUser()
     console.log('Sidebar - Current user from localStorage:', currentUser)
     console.log('Sidebar - User avatar:', currentUser?.avatar)
-    
     if (currentUser && currentUser.fullName) {
-      // Remove duplicate words in name (e.g., "taimoor taimoor" -> "taimoor")
       const nameParts = currentUser.fullName.split(' ')
       const uniqueParts = [...new Set(nameParts)]
       currentUser.fullName = uniqueParts.join(' ')
     }
     setUser(currentUser)
   }, [])
-
   const handleLogoClick = () => {
     setsidebarOpen(!isOpen)
   }
-
   const handleManageAccount = () => {
     setMenuOpen(false)
     navigate('/profile')
   }
-
   const handleSignOut = () => {
     apiLogout()
     navigate('/')
     window.location.reload() // Reload to clear state
   }
-
-  // Check if route is active
   const isFeedActive = location.pathname === '/feed' || location.pathname === '/'
   const isMessagesActive = location.pathname.startsWith('/messages')
   const isConnectionsActive = location.pathname === '/connections'
@@ -87,14 +77,11 @@ function Sidebar({ isOpen, setsidebarOpen }) {
   const isProfileActive = location.pathname.startsWith('/profile')
   const isReviewCenterActive = location.pathname === '/review-center'
   const isShoppingActive = location.pathname.startsWith('/shopping')
-
-  // Role-based menu rendering
   const isReviewer = user?.role === 'Reviewer'
   const isBusiness = user?.role === 'Business'
-
   return (
     <SidebarContainer $isOpen={isOpen}>
-      {/* Logo Section */}
+      {}
       <LogoSection>
         <LogoContainer onClick={handleLogoClick}>
           <LogoBox><Check size={20} /></LogoBox>
@@ -102,83 +89,69 @@ function Sidebar({ isOpen, setsidebarOpen }) {
         </LogoContainer>
         <Divider />
       </LogoSection>
-
-      {/* Navigation Menu */}
+      {}
       <NavigationMenu>
         <MenuList>
-          {/* Reviewer Menu */}
+          {}
           {isReviewer && (
             <>
               <Feed_Button to="/review-center" $isActive={isReviewCenterActive} $isOpen={isOpen}>
                 <ClipboardCheck />
                 <span>Review Center</span>
               </Feed_Button>
-
               <Connections_Button to="/feed" $isActive={isFeedActive} $isOpen={isOpen}>
                 <Home />
                 <span>Feed</span>
               </Connections_Button>
-
               <Discover_Button to="/shopping" $isActive={isShoppingActive} $isOpen={isOpen}>
                 <ShoppingBag />
                 <span>Shopping</span>
               </Discover_Button>
-
               <Discover_Button to="/messages" $isActive={isMessagesActive} $isOpen={isOpen}>
                 <MessageCircle />
                 <span>Messages</span>
               </Discover_Button>
-
               <Profile_Button to="/connections" $isActive={isConnectionsActive} $isOpen={isOpen}>
                 <Users />
                 <span>Connections</span>
               </Profile_Button>
-
               <CreatePost_Button to="/create-post" $isActive={isCreatePostActive} $isOpen={isOpen}>
                 <PlusSquare />
                 <span>Create Post</span>
               </CreatePost_Button>
-
               <Profile_Button to="/profile" $isActive={isProfileActive} $isOpen={isOpen}>
                 <User />
                 <span>Profile</span>
               </Profile_Button>
             </>
           )}
-
-          {/* Regular User Menu */}
+          {}
           {!isReviewer && !isBusiness && (
             <>
               <Feed_Button to="/feed" $isActive={isFeedActive} $isOpen={isOpen}>
                 <Home />
                 <span>Feed</span>
               </Feed_Button>
-
               <Discover_Button to="/shopping" $isActive={isShoppingActive} $isOpen={isOpen}>
                 <ShoppingBag />
                 <span>Shopping</span>
               </Discover_Button>
-
               <Messages_Button to="/messages" $isActive={isMessagesActive} $isOpen={isOpen}>
                 <MessageCircle />
                 <span>Messages</span>
               </Messages_Button>
-
               <Connections_Button to="/connections" $isActive={isConnectionsActive} $isOpen={isOpen}>
                 <Users />
                 <span>Connections</span>
               </Connections_Button>
-
               <Discover_Button to="/discover" $isActive={isDiscoverActive} $isOpen={isOpen}>
                 <Compass />
                 <span>Discover</span>
               </Discover_Button>
-
               <CreatePost_Button to="/create-post" $isActive={isCreatePostActive} $isOpen={isOpen}>
                 <PlusSquare />
                 <span>Create Post</span>
               </CreatePost_Button>
-
               <Profile_Button to="/profile" $isActive={isProfileActive} $isOpen={isOpen}>
                 <User />
                 <span>Profile</span>
@@ -187,8 +160,7 @@ function Sidebar({ isOpen, setsidebarOpen }) {
           )}
         </MenuList>
       </NavigationMenu>
-
-      {/* User Profile Section */}
+      {}
       <UserProfileSection>
         <UserProfileButton onClick={() => setMenuOpen(!menuOpen)}>
           <UserAvatar 
@@ -219,8 +191,7 @@ function Sidebar({ isOpen, setsidebarOpen }) {
             <LogOut />
           </LogoutIconButton>
         </UserProfileButton>
-
-        {/* User Menu Dropdown */}
+        {}
         <UserMenu $isOpen={menuOpen}>
           <UserMenuItem onClick={handleManageAccount}>
             <Settings />
@@ -235,5 +206,4 @@ function Sidebar({ isOpen, setsidebarOpen }) {
     </SidebarContainer>
   )
 }
-
 export default Sidebar

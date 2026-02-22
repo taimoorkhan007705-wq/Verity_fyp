@@ -1,8 +1,6 @@
 import mongoose from 'mongoose';
 import bcrypt from 'bcryptjs';
-
 const reviewerSchema = new mongoose.Schema({
-  // Core Authentication
   email: {
     type: String,
     required: [true, 'Email is required'],
@@ -19,8 +17,6 @@ const reviewerSchema = new mongoose.Schema({
     type: String,
     default: 'Reviewer'
   },
-  
-  // User Info
   user_info: {
     firstName: {
       type: String,
@@ -42,8 +38,6 @@ const reviewerSchema = new mongoose.Schema({
       default: ''
     }
   },
-  
-  // Profile Info
   profile_info: {
     avatar: {
       type: String,
@@ -63,8 +57,6 @@ const reviewerSchema = new mongoose.Schema({
       default: ''
     }
   },
-  
-  // Social Stats
   social_stats: {
     followersCount: {
       type: Number,
@@ -79,8 +71,6 @@ const reviewerSchema = new mongoose.Schema({
       default: 0
     }
   },
-  
-  // Trust & Security
   trust_security: {
     trustScore: {
       type: Number,
@@ -97,8 +87,6 @@ const reviewerSchema = new mongoose.Schema({
       default: true
     }
   },
-  
-  // Reviewer Performance
   reviewer_stats: {
     reviewsCompleted: {
       type: Number,
@@ -131,8 +119,6 @@ const reviewerSchema = new mongoose.Schema({
       default: 0
     }
   },
-  
-  // Reviewer Specialization
   reviewer_profile: {
     specialization: {
       type: [String],
@@ -144,8 +130,6 @@ const reviewerSchema = new mongoose.Schema({
       default: 'Junior'
     }
   },
-  
-  // Activity Tracking
   activity_tracking: {
     lastReviewAt: {
       type: Date
@@ -158,10 +142,7 @@ const reviewerSchema = new mongoose.Schema({
 }, {
   timestamps: true
 });
-
-// Hash password before saving
 reviewerSchema.pre('save', async function(next) {
-  // Clean duplicate names
   if (this.isModified('user_info.fullName') && this.user_info.fullName) {
     const nameParts = this.user_info.fullName.trim().split(/\s+/)
     const uniqueParts = [...new Set(nameParts.map(part => part.toLowerCase()))]
@@ -169,9 +150,7 @@ reviewerSchema.pre('save', async function(next) {
       part.charAt(0).toUpperCase() + part.slice(1).toLowerCase()
     ).join(' ')
   }
-
   if (!this.isModified('password')) return next();
-  
   try {
     const salt = await bcrypt.genSalt(10);
     this.password = await bcrypt.hash(this.password, salt);
@@ -180,12 +159,8 @@ reviewerSchema.pre('save', async function(next) {
     next(error);
   }
 });
-
-// Compare password method
 reviewerSchema.methods.comparePassword = async function(candidatePassword) {
   return await bcrypt.compare(candidatePassword, this.password);
 };
-
 const Reviewer = mongoose.model('Reviewer', reviewerSchema);
-
 export default Reviewer;

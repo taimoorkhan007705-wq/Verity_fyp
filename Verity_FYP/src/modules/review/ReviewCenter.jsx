@@ -65,7 +65,6 @@ import {
   ModalCancelButton,
   ModalSubmitButton,
 } from './ReviewCenter.styled'
-
 function ReviewCenter() {
   const user = getCurrentUser()
   const navigate = useNavigate()
@@ -84,12 +83,10 @@ function ReviewCenter() {
     pendingReviews: 0,
     accuracy: 0
   })
-
   useEffect(() => {
     loadPendingReviews()
     loadReviewerStats()
   }, [])
-
   const loadReviewerStats = async () => {
     try {
       const response = await getReviewerStats()
@@ -98,18 +95,13 @@ function ReviewCenter() {
       console.error('Failed to load reviewer stats:', error)
     }
   }
-
   const loadPendingReviews = async () => {
     try {
       const response = await getPendingReviews()
       console.log('API Response:', response)
       console.log('Full API Response JSON:', JSON.stringify(response, null, 2))
-      
-      // Handle new grouped format
       let transformedPosts = []
-      
       if (response.groupedPosts) {
-        // New grouped format
         response.groupedPosts.forEach(group => {
           console.log('Processing group:', group.author.fullName)
           console.log('Group posts:', JSON.stringify(group.posts, null, 2))
@@ -119,7 +111,6 @@ function ReviewCenter() {
               ? `http://localhost:5000${post.media[0]}` 
               : null
             console.log('Image URL:', imageUrl)
-            
             transformedPosts.push({
               id: post._id,
               author: {
@@ -141,7 +132,6 @@ function ReviewCenter() {
           })
         })
       } else if (response.posts) {
-        // Old format (fallback)
         transformedPosts = response.posts.map(post => ({
           id: post._id,
           author: {
@@ -159,7 +149,6 @@ function ReviewCenter() {
           reviewedAt: null
         }))
       }
-      
       console.log('Transformed posts:', transformedPosts)
       setAllPosts(transformedPosts)
     } catch (error) {
@@ -168,19 +157,15 @@ function ReviewCenter() {
       setLoading(false)
     }
   }
-
   const formatTime = (timestamp) => {
     const date = new Date(timestamp)
     const now = new Date()
     const diff = Math.floor((now - date) / 1000)
-
     if (diff < 60) return 'Just now'
     if (diff < 3600) return `${Math.floor(diff / 60)} minutes ago`
     if (diff < 86400) return `${Math.floor(diff / 3600)} hours ago`
     return `${Math.floor(diff / 86400)} days ago`
   }
-
-  // Calculate stats from posts
   const stats = useMemo(() => {
     const pending = allPosts.filter(p => p.status === 'pending').length
     const approved = allPosts.filter(p => p.status === 'approved').length
@@ -188,25 +173,17 @@ function ReviewCenter() {
     const flagged = allPosts.filter(p => p.status === 'flagged').length
     const total = approved + rejected
     const accuracy = total > 0 ? Math.round((approved / total) * 100) : 0
-    
     return { pending, approved, rejected, flagged, accuracy, total }
   }, [allPosts])
-
-  // Filter posts based on active tab
   const filteredPosts = useMemo(() => {
     let posts = allPosts.filter(post => post.status === activeTab)
-    
-    // Sort posts
     posts = [...posts].sort((a, b) => {
       if (sortBy === 'newest') return a.id > b.id ? -1 : 1
       if (sortBy === 'oldest') return a.id < b.id ? -1 : 1
       return 0
     })
-    
     return posts
   }, [allPosts, activeTab, sortBy])
-
-  // Action handlers
   const handleApprove = async (postId) => {
     try {
       await submitReview({
@@ -217,7 +194,6 @@ function ReviewCenter() {
         sources: [],
         tags: ['approved']
       })
-      
       setAllPosts(posts => posts.map(post => 
         post.id === postId 
           ? { ...post, status: 'approved', reviewedAt: new Date().toLocaleString() }
@@ -228,18 +204,15 @@ function ReviewCenter() {
       alert(`Failed to approve post: ${error.message}`)
     }
   }
-
   const handleReject = (post) => {
     setSelectedPost(post)
     setShowRejectModal(true)
   }
-
   const handleRejectSubmit = async () => {
     if (!rejectionReason) {
       alert('Please select a rejection reason')
       return
     }
-    
     try {
       await submitReview({
         postId: selectedPost.id,
@@ -249,7 +222,6 @@ function ReviewCenter() {
         sources: [],
         tags: [rejectionReason]
       })
-      
       setAllPosts(posts => posts.map(post => 
         post.id === selectedPost.id 
           ? { 
@@ -261,7 +233,6 @@ function ReviewCenter() {
             }
           : post
       ))
-      
       alert('Post rejected successfully!')
       setShowRejectModal(false)
       setRejectionReason('')
@@ -271,7 +242,6 @@ function ReviewCenter() {
       alert(`Failed to reject post: ${error.message}`)
     }
   }
-
   const handleFlag = (postId) => {
     setAllPosts(posts => posts.map(post => 
       post.id === postId 
@@ -285,10 +255,9 @@ function ReviewCenter() {
     ))
     alert('Post flagged for admin review!')
   }
-
   return (
     <ReviewCenterContainer>
-      {/* Top Header */}
+      {}
       <TopHeader>
         <HeaderLeft>
           <Logo>
@@ -324,12 +293,11 @@ function ReviewCenter() {
           </BackButton>
         </HeaderRight>
       </TopHeader>
-
-      {/* Content Wrapper */}
+      {}
       <ContentWrapper>
-        {/* Sidebar */}
+        {}
         <ReviewSidebar>
-          {/* Reviewer Info Card */}
+          {}
           <div style={{
             backgroundColor: '#f0fdfa',
             padding: '1.25rem',
@@ -396,7 +364,6 @@ function ReviewCenter() {
               </span>
             </div>
           </div>
-
           <SidebarTitle>Navigation</SidebarTitle>
           <SidebarMenu>
             <SidebarMenuItem $isActive={activeTab === 'pending'} onClick={() => setActiveTab('pending')}>
@@ -420,10 +387,9 @@ function ReviewCenter() {
             </SidebarMenuItem>
           </SidebarMenu>
         </ReviewSidebar>
-
-        {/* Main Content */}
+        {}
         <MainContent>
-          {/* Statistics View */}
+          {}
           {activeTab === 'stats' && (
             <>
               <h2 style={{fontSize: '1.5rem', fontWeight: 'bold', marginBottom: '1.5rem', color: '#1f2937'}}>
@@ -458,7 +424,6 @@ function ReviewCenter() {
                   </StatValue>
                 </StatCard>
               </StatsGrid>
-              
               <div style={{marginTop: '2rem', padding: '1.5rem', background: 'white', borderRadius: '1rem', boxShadow: '0 2px 8px rgba(0,0,0,0.1)'}}>
                 <h3 style={{fontSize: '1.25rem', fontWeight: 'bold', marginBottom: '1rem', color: '#1f2937', display: 'flex', alignItems: 'center', gap: '0.5rem'}}>
                   <TrendingUp size={24} color="#14b8a6" />
@@ -499,11 +464,10 @@ function ReviewCenter() {
               </div>
             </>
           )}
-
-          {/* Posts View (Pending, Approved, Rejected, Flagged) */}
+          {}
           {activeTab !== 'stats' && (
             <>
-              {/* Quick Stats */}
+              {}
               <StatsGrid>
                 <StatCard>
                   <StatLabel>Pending Reviews</StatLabel>
@@ -522,16 +486,14 @@ function ReviewCenter() {
                   <StatValue $color="#14b8a6">{stats.accuracy}%</StatValue>
                 </StatCard>
               </StatsGrid>
-
-              {/* Filters */}
+              {}
               <FiltersRow>
                 <FilterSelect value={sortBy} onChange={(e) => setSortBy(e.target.value)}>
                   <option value="newest">Newest First</option>
                   <option value="oldest">Oldest First</option>
                 </FilterSelect>
               </FiltersRow>
-
-              {/* Review Cards */}
+              {}
               {filteredPosts.length === 0 ? (
                 <div style={{textAlign: 'center', padding: '3rem', color: '#6b7280'}}>
                   <p style={{fontSize: '1.125rem', fontWeight: 600}}>No posts in this category</p>
@@ -541,7 +503,7 @@ function ReviewCenter() {
                 <ReviewCardsGrid>
                   {filteredPosts.map((post) => (
                     <ReviewCard key={post.id}>
-                      {/* Header */}
+                      {}
                       <ReviewCardHeader>
                         <AuthorInfo>
                           <AuthorAvatar src={post.author.avatar} alt={post.author.name} />
@@ -553,8 +515,7 @@ function ReviewCenter() {
                           </AuthorDetails>
                         </AuthorInfo>
                       </ReviewCardHeader>
-
-                      {/* Post Content */}
+                      {}
                       <PostContent>
                         <PostText>{post.text}</PostText>
                         {console.log('Post ID:', post.id, 'Image URL:', post.image)}
@@ -566,8 +527,7 @@ function ReviewCenter() {
                           </div>
                         )}
                       </PostContent>
-
-                      {/* Status Badge for reviewed posts */}
+                      {}
                       {post.status !== 'pending' && (
                         <div style={{
                           padding: '0.75rem',
@@ -600,8 +560,7 @@ function ReviewCenter() {
                           )}
                         </div>
                       )}
-
-                      {/* Action Buttons - Only show for pending posts */}
+                      {}
                       {post.status === 'pending' && (
                         <ActionButtonsRow>
                           <ApproveButton onClick={() => handleApprove(post.id)}>
@@ -621,8 +580,7 @@ function ReviewCenter() {
           )}
         </MainContent>
       </ContentWrapper>
-
-      {/* Rejection Modal */}
+      {}
       <ModalOverlay $isOpen={showRejectModal} onClick={() => setShowRejectModal(false)}>
         <ModalContent onClick={(e) => e.stopPropagation()}>
           <ModalTitle>Reject Post</ModalTitle>
@@ -655,5 +613,4 @@ function ReviewCenter() {
     </ReviewCenterContainer>
   )
 }
-
 export default ReviewCenter

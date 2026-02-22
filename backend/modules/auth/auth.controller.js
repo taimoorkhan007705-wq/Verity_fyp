@@ -2,16 +2,13 @@ import jwt from 'jsonwebtoken'
 import User from '../../models/User.js'
 import Reviewer from '../../models/Reviewer.js'
 import Business from '../../models/Business.js'
-
 const generateToken = (userId) => {
   return jwt.sign({ id: userId }, process.env.JWT_SECRET, { expiresIn: '30d' })
 }
-
 const getModelByRole = (role) => {
   const models = { Reviewer, Business, User }
   return models[role] || User
 }
-
 const cleanFullName = (fullName) => {
   if (!fullName) return fullName
   const nameParts = fullName.trim().split(/\s+/)
@@ -20,30 +17,23 @@ const cleanFullName = (fullName) => {
     part.charAt(0).toUpperCase() + part.slice(1).toLowerCase()
   ).join(' ')
 }
-
 export const signup = async (req, res) => {
   try {
     let { fullName, name, email, password, role } = req.body
-
     fullName = fullName || name
-
     if (!fullName || !email || !password) {
       return res.status(400).json({ 
         success: false, 
         message: 'Please provide fullName (or name), email, and password' 
       })
     }
-
     fullName = cleanFullName(fullName)
-
     const existingUser = await User.findOne({ email }) || 
                          await Reviewer.findOne({ email}) || 
                          await Business.findOne({ email })
-
     if (existingUser) {
       return res.status(400).json({ success: false, message: 'Email already exists' })
     }
-
     const Model = getModelByRole(role)
     const userData = {
       email,
@@ -59,10 +49,8 @@ export const signup = async (req, res) => {
       trust_security: {},
       activity_tracking: {}
     }
-
     const user = await Model.create(userData)
     const token = generateToken(user._id)
-
     res.status(201).json({
       success: true,
       token,
@@ -79,7 +67,6 @@ export const signup = async (req, res) => {
     res.status(500).json({ success: false, message: 'Signup failed', error: error.message })
   }
 }
-
 export const testAuth = async (req, res) => {
   try {
     res.json({
@@ -95,18 +82,14 @@ export const testAuth = async (req, res) => {
     res.status(500).json({ success: false, message: 'Test failed', error: error.message })
   }
 }
-
 export const login = async (req, res) => {
   try {
     const { email, password, role } = req.body
-
     const userInUsers = await User.findOne({ email })
     const userInReviewers = await Reviewer.findOne({ email })
     const userInBusinesses = await Business.findOne({ email })
-
     let foundUser = null
     let actualRole = null
-
     if (userInUsers) {
       foundUser = userInUsers
       actualRole = 'User'
@@ -117,21 +100,18 @@ export const login = async (req, res) => {
       foundUser = userInBusinesses
       actualRole = 'Business'
     }
-
     if (!foundUser) {
       return res.status(401).json({ 
         success: false, 
         message: 'No account found with this email address' 
       })
     }
-
     if (actualRole !== role) {
       return res.status(401).json({ 
         success: false, 
         message: `This email is registered as a ${actualRole} account. Please select ${actualRole} to login.` 
       })
     }
-
     const isPasswordValid = await foundUser.comparePassword(password)
     if (!isPasswordValid) {
       return res.status(401).json({ 
@@ -139,9 +119,7 @@ export const login = async (req, res) => {
         message: 'Incorrect password. Please try again.' 
       })
     }
-
     const token = generateToken(foundUser._id)
-
     res.status(200).json({
       success: true,
       token,

@@ -1,10 +1,7 @@
 const API_URL = 'http://localhost:5000/api'
-
-// Create Post API
 export const createPost = async (formData) => {
   try {
     const token = localStorage.getItem('token')
-    
     const response = await fetch(`${API_URL}/posts`, {
       method: 'POST',
       headers: {
@@ -12,20 +9,15 @@ export const createPost = async (formData) => {
       },
       body: formData,
     })
-
     const data = await response.json()
-    
     if (!response.ok) {
       throw new Error(data.message || 'Failed to create post')
     }
-
     return data
   } catch (error) {
     throw error
   }
 }
-
-// Get Feed API
 export const getFeed = async (page = 1, limit = 10) => {
   try {
     const response = await fetch(`${API_URL}/posts/feed?page=${page}&limit=${limit}`, {
@@ -34,13 +26,10 @@ export const getFeed = async (page = 1, limit = 10) => {
         'Content-Type': 'application/json',
       },
     })
-
     const data = await response.json()
-    
     if (!response.ok) {
       throw new Error(data.message || 'Failed to fetch feed')
     }
-
     return data
   } catch (error) {
     throw error

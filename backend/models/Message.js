@@ -1,14 +1,10 @@
 import mongoose from 'mongoose'
-
 const messageSchema = new mongoose.Schema({
-  // Conversation
   conversationId: {
     type: String,
     required: true,
     index: true
   },
-  
-  // Participants
   sender: {
     type: mongoose.Schema.Types.ObjectId,
     refPath: 'senderModel',
@@ -19,7 +15,6 @@ const messageSchema = new mongoose.Schema({
     required: true,
     enum: ['User', 'Reviewer', 'Business']
   },
-  
   receiver: {
     type: mongoose.Schema.Types.ObjectId,
     refPath: 'receiverModel',
@@ -30,8 +25,6 @@ const messageSchema = new mongoose.Schema({
     required: true,
     enum: ['User', 'Reviewer', 'Business']
   },
-  
-  // Content
   message: {
     type: String,
     required: true,
@@ -46,14 +39,11 @@ const messageSchema = new mongoose.Schema({
     name: String,
     size: Number
   }],
-  
-  // Status
   isRead: {
     type: Boolean,
     default: false
   },
   readAt: Date,
-  
   isDeleted: {
     type: Boolean,
     default: false
@@ -64,10 +54,7 @@ const messageSchema = new mongoose.Schema({
 }, {
   timestamps: true
 })
-
-// Indexes for performance
 messageSchema.index({ conversationId: 1, createdAt: -1 })
 messageSchema.index({ receiver: 1, isRead: 1 })
-
 const Message = mongoose.model('Message', messageSchema)
 export default Message

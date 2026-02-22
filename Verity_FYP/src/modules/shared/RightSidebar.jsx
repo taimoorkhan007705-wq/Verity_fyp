@@ -6,7 +6,6 @@ import {
   RightSidebarTitle,
   RightSidebarContent,
 } from './RightSidebar.styled'
-
 function RightSidebar() {
   const user = getCurrentUser()
   const [showLeaderboard, setShowLeaderboard] = useState(false)
@@ -18,7 +17,6 @@ function RightSidebar() {
     accuracy: 0
   })
   const [loading, setLoading] = useState(true)
-
   useEffect(() => {
     if (user?.role === 'Reviewer') {
       loadStats()
@@ -26,7 +24,6 @@ function RightSidebar() {
       setLoading(false)
     }
   }, [user])
-
   const loadStats = async () => {
     try {
       const response = await getReviewerStats()
@@ -37,17 +34,15 @@ function RightSidebar() {
       setLoading(false)
     }
   }
-
   const getTrustScoreColor = (score) => {
     if (score >= 90) return '#10b981'
     if (score >= 80) return '#14b8a6'
     if (score >= 70) return '#f59e0b'
     return '#ef4444'
   }
-
   return (
     <RightSidebarContainer>
-      {/* Reviewer Leaderboard Button */}
+      {}
       <div style={{ position: 'relative' }}>
         <button
           onClick={() => setShowLeaderboard(!showLeaderboard)}
@@ -84,8 +79,7 @@ function RightSidebar() {
           </div>
           {showLeaderboard ? <ChevronUp size={20} /> : <ChevronDown size={20} />}
         </button>
-
-        {/* Dropdown Panel */}
+        {}
         {showLeaderboard && (
           <div style={{
             position: 'absolute',
@@ -100,7 +94,7 @@ function RightSidebar() {
             border: '2px solid #14b8a6',
             padding: '1.5rem'
           }}>
-            {/* Leaderboard Header */}
+            {}
             <div style={{
               fontSize: '0.875rem',
               fontWeight: '700',
@@ -111,8 +105,7 @@ function RightSidebar() {
             }}>
               Top Reviewers
             </div>
-
-            {/* Reviewer Entry */}
+            {}
             {user?.role === 'Reviewer' && !loading && (
               <div style={{
                 display: 'flex',
@@ -123,13 +116,13 @@ function RightSidebar() {
                 borderRadius: '0.75rem',
                 border: '2px solid #14b8a6'
               }}>
-                {/* Top Row: Rank, Image, Name */}
+                {}
                 <div style={{
                   display: 'flex',
                   alignItems: 'center',
                   gap: '0.75rem'
                 }}>
-                  {/* Rank Badge */}
+                  {}
                   <div style={{
                     width: '45px',
                     height: '45px',
@@ -145,8 +138,7 @@ function RightSidebar() {
                   }}>
                     1st
                   </div>
-
-                  {/* Reviewer Profile Image */}
+                  {}
                   <img 
                     src={
                       user?.avatar?.startsWith('http') 
@@ -165,8 +157,7 @@ function RightSidebar() {
                       flexShrink: 0
                     }}
                   />
-
-                  {/* Reviewer Name */}
+                  {}
                   <div style={{ flex: 1, minWidth: 0 }}>
                     <div style={{
                       fontSize: '1.125rem',
@@ -180,8 +171,7 @@ function RightSidebar() {
                     </div>
                   </div>
                 </div>
-
-                {/* Bottom Row: Trust Score */}
+                {}
                 <div style={{
                   display: 'flex',
                   alignItems: 'center',
@@ -210,8 +200,7 @@ function RightSidebar() {
                 </div>
               </div>
             )}
-
-            {/* No other reviewers message */}
+            {}
             <div style={{
               textAlign: 'center',
               color: '#94a3b8',
@@ -227,5 +216,4 @@ function RightSidebar() {
     </RightSidebarContainer>
   )
 }
-
 export default RightSidebar

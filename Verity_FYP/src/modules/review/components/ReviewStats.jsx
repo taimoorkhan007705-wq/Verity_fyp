@@ -1,5 +1,4 @@
 import { StatsGrid, StatCard, StatLabel, StatValue } from '../ReviewCenter.styled'
-
 function ReviewStats({ stats }) {
   return (
     <StatsGrid>
@@ -22,5 +21,4 @@ function ReviewStats({ stats }) {
     </StatsGrid>
   )
 }
-
 export default ReviewStats

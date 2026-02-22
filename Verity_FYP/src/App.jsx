@@ -11,34 +11,24 @@ import EditProfile from './modules/profile/EditProfile'
 import Shopping from './modules/shopping/Shopping'
 import Layout from './modules/shared/Layout'
 import { isAuthenticated, getCurrentUser, logout } from './services/api'
-
-// Placeholder components for routes not yet migrated
 const Messages = () => <div>Messages (Coming Soon)</div>
 const Connections = () => <div>Connections (Coming Soon)</div>
 const ChatBox = () => <div>ChatBox (Coming Soon)</div>
 const Discover = () => <div>Discover (Coming Soon)</div>
-
 function App() {
   const [user, setUser] = useState(null)
   const [loading, setLoading] = useState(true)
-
   useEffect(() => {
-    // Force clear cache if version mismatch (fixes duplicate name bug)
     const APP_VERSION = '1.2.0' // Increment this to force cache clear
     const storedVersion = localStorage.getItem('appVersion')
-    
     if (storedVersion !== APP_VERSION) {
       console.log('Clearing cache due to version update...')
-      // Clear everything
       localStorage.clear()
       sessionStorage.clear()
       localStorage.setItem('appVersion', APP_VERSION)
-      // Force reload without cache
       window.location.reload(true)
       return
     }
-
-    // Fetch fresh user data from backend if authenticated
     const fetchUserData = async () => {
       if (isAuthenticated()) {
         try {
@@ -48,15 +38,12 @@ function App() {
               'Authorization': `Bearer ${token}`
             }
           })
-          
           if (response.ok) {
             const data = await response.json()
             console.log('App.jsx - Fresh user data from backend:', data.user)
-            // Update localStorage with fresh data
             localStorage.setItem('user', JSON.stringify(data.user))
             setUser(data.user)
           } else {
-            // If token is invalid, use localStorage data
             setUser(getCurrentUser())
           }
         } catch (error) {
@@ -66,19 +53,15 @@ function App() {
       }
       setLoading(false)
     }
-
     fetchUserData()
   }, [])
-
   const handleLogout = () => {
     logout()
     setUser(null)
   }
-
   if (loading) {
     return <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh', fontSize: '1.5rem', color: '#14b8a6' }}>Loading...</div>
   }
-
   if (!user) {
     return (
       <Routes>
@@ -88,7 +71,6 @@ function App() {
       </Routes>
     )
   }
-
   if (user.role === 'Business') {
     return (
       <Routes>
@@ -98,7 +80,6 @@ function App() {
       </Routes>
     )
   }
-
   if (user.role === 'Reviewer') {
     return (
       <Routes>
@@ -120,7 +101,6 @@ function App() {
       </Routes>
     )
   }
-
   return (
     <Routes>
       <Route path="/" element={<Layout onLogout={handleLogout} />}>
@@ -140,5 +120,4 @@ function App() {
     </Routes>
   )
 }
-
 export default App

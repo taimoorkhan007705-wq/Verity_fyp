@@ -1,8 +1,6 @@
 import mongoose from 'mongoose';
 import bcrypt from 'bcryptjs';
-
 const businessSchema = new mongoose.Schema({
-  // Core Authentication
   email: {
     type: String,
     required: [true, 'Email is required'],
@@ -19,8 +17,6 @@ const businessSchema = new mongoose.Schema({
     type: String,
     default: 'Business'
   },
-  
-  // User Info
   user_info: {
     businessName: {
       type: String,
@@ -43,8 +39,6 @@ const businessSchema = new mongoose.Schema({
       trim: true
     }
   },
-  
-  // Profile Info
   profile_info: {
     avatar: {
       type: String,
@@ -64,8 +58,6 @@ const businessSchema = new mongoose.Schema({
       default: ''
     }
   },
-  
-  // Business Details
   business_details: {
     businessType: {
       type: String,
@@ -84,8 +76,6 @@ const businessSchema = new mongoose.Schema({
       type: Number
     }
   },
-  
-  // Contact Information
   contact_info: {
     phone: {
       type: String,
@@ -104,8 +94,6 @@ const businessSchema = new mongoose.Schema({
       default: ''
     }
   },
-  
-  // Social Stats
   social_stats: {
     followersCount: {
       type: Number,
@@ -120,8 +108,6 @@ const businessSchema = new mongoose.Schema({
       default: 0
     }
   },
-  
-  // Trust & Security
   trust_security: {
     isVerified: {
       type: Boolean,
@@ -132,8 +118,6 @@ const businessSchema = new mongoose.Schema({
       default: true
     }
   },
-  
-  // Subscription
   subscription: {
     plan: {
       type: String,
@@ -147,8 +131,6 @@ const businessSchema = new mongoose.Schema({
       type: Date
     }
   },
-  
-  // Business Analytics
   business_analytics: {
     totalPosts: {
       type: Number,
@@ -174,10 +156,7 @@ const businessSchema = new mongoose.Schema({
 }, {
   timestamps: true
 });
-
-// Hash password before saving
 businessSchema.pre('save', async function(next) {
-  // Clean duplicate names
   if (this.isModified('user_info.fullName') && this.user_info.fullName) {
     const nameParts = this.user_info.fullName.trim().split(/\s+/)
     const uniqueParts = [...new Set(nameParts.map(part => part.toLowerCase()))]
@@ -185,9 +164,7 @@ businessSchema.pre('save', async function(next) {
       part.charAt(0).toUpperCase() + part.slice(1).toLowerCase()
     ).join(' ')
   }
-
   if (!this.isModified('password')) return next();
-  
   try {
     const salt = await bcrypt.genSalt(10);
     this.password = await bcrypt.hash(this.password, salt);
@@ -196,12 +173,8 @@ businessSchema.pre('save', async function(next) {
     next(error);
   }
 });
-
-// Compare password method
 businessSchema.methods.comparePassword = async function(candidatePassword) {
   return await bcrypt.compare(candidatePassword, this.password);
 };
-
 const Business = mongoose.model('Business', businessSchema);
-
 export default Business;

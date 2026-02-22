@@ -27,36 +27,30 @@ import {
   PostImage,
   EmptyState
 } from './Profile.styled'
-
 function Profile() {
   const navigate = useNavigate()
   const [user, setUser] = useState(null)
   const [activeTab, setActiveTab] = useState('posts')
   const [posts, setPosts] = useState([])
   const [loading, setLoading] = useState(true)
-
   useEffect(() => {
     loadProfile()
   }, [])
-
   const loadProfile = async () => {
     try {
       const response = await getProfile()
       setUser(response.user)
     } catch (error) {
       console.error('Failed to load profile:', error)
-      // Fallback to localStorage
       const currentUser = getCurrentUser()
       setUser(currentUser)
     } finally {
       setLoading(false)
     }
   }
-
   const handleEditProfile = () => {
     navigate('/profile/edit')
   }
-
   if (loading) {
     return (
       <ProfileContainer>
@@ -66,7 +60,6 @@ function Profile() {
       </ProfileContainer>
     )
   }
-
   if (!user) {
     return (
       <ProfileContainer>
@@ -76,13 +69,11 @@ function Profile() {
       </ProfileContainer>
     )
   }
-
   const avatarUrl = user.avatar?.startsWith('http') 
     ? user.avatar 
     : user.avatar?.startsWith('/uploads')
     ? `http://localhost:5000${user.avatar}`
     : 'https://via.placeholder.com/150'
-
   return (
     <ProfileContainer>
       <ProfileHeader>
@@ -92,7 +83,6 @@ function Profile() {
             <UserPlus size={20} />
           </EditImageButton>
         </ProfileImageSection>
-
         <ProfileStats>
           <StatItem>
             <StatNumber>{user.postsCount || 0}</StatNumber>
@@ -108,7 +98,6 @@ function Profile() {
           </StatItem>
         </ProfileStats>
       </ProfileHeader>
-
       <ProfileInfo>
         <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.5rem' }}>
           <ProfileName>{user.fullName}</ProfileName>
@@ -137,7 +126,6 @@ function Profile() {
           </ProfileWebsite>
         )}
       </ProfileInfo>
-
       <ProfileActions>
         <EditProfileButton onClick={handleEditProfile}>
           Edit Profile
@@ -146,7 +134,6 @@ function Profile() {
           <Settings size={20} />
         </SettingsButton>
       </ProfileActions>
-
       <ProfileTabs>
         <TabButton $active={activeTab === 'posts'} onClick={() => setActiveTab('posts')}>
           <TabIcon><Grid size={20} /></TabIcon>
@@ -157,7 +144,6 @@ function Profile() {
           SAVED
         </TabButton>
       </ProfileTabs>
-
       {activeTab === 'posts' && (
         <PostsGrid>
           {posts.length === 0 ? (
@@ -175,7 +161,6 @@ function Profile() {
           )}
         </PostsGrid>
       )}
-
       {activeTab === 'saved' && (
         <EmptyState>
           <Bookmark size={64} />
@@ -186,5 +171,4 @@ function Profile() {
     </ProfileContainer>
   )
 }
-
 export default Profile

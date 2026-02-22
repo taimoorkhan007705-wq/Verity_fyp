@@ -8,7 +8,6 @@ import {
   ModalCancelButton,
   ModalSubmitButton,
 } from '../ReviewCenter.styled'
-
 function RejectModal({ isOpen, onClose, onSubmit, reason, setReason, notes, setNotes }) {
   return (
     <ModalOverlay $isOpen={isOpen} onClick={onClose}>
@@ -42,5 +41,4 @@ function RejectModal({ isOpen, onClose, onSubmit, reason, setReason, notes, setN
     </ModalOverlay>
   )
 }
-
 export default RejectModal

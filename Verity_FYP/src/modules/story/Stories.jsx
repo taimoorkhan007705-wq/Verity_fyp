@@ -25,7 +25,6 @@ import {
   CaptionInput,
   SubmitButton
 } from './Stories.styled'
-
 const Stories = () => {
   const navigate = useNavigate()
   const [stories, setStories] = useState([])
@@ -37,9 +36,7 @@ const Stories = () => {
   const [uploading, setUploading] = useState(false)
   const [viewingStory, setViewingStory] = useState(null)
   const [currentUser, setCurrentUser] = useState(null)
-
   useEffect(() => {
-    // Get current user from localStorage
     const userStr = localStorage.getItem('user')
     if (userStr) {
       const user = JSON.parse(userStr)
@@ -48,7 +45,6 @@ const Stories = () => {
     }
     fetchStories()
   }, [])
-
   const fetchStories = async () => {
     try {
       const response = await getStories()
@@ -61,7 +57,6 @@ const Stories = () => {
       setLoading(false)
     }
   }
-
   const handleFileSelect = (e) => {
     const file = e.target.files[0]
     if (file) {
@@ -73,29 +68,22 @@ const Stories = () => {
       reader.readAsDataURL(file)
     }
   }
-
   const handleCreateStory = async () => {
     if (!selectedFile) {
       alert('Please select a file')
       return
     }
-
     setUploading(true)
     try {
       const formData = new FormData()
       formData.append('media', selectedFile)
       formData.append('caption', caption)
-
       await createStory(formData)
       alert('Story created successfully!')
-      
-      // Reset form
       setShowCreateModal(false)
       setSelectedFile(null)
       setPreview(null)
       setCaption('')
-      
-      // Refresh stories
       fetchStories()
     } catch (error) {
       alert(error.message || 'Failed to create story')
@@ -103,50 +91,40 @@ const Stories = () => {
       setUploading(false)
     }
   }
-
   const handleYourStoryImageClick = (e) => {
-    // Check if current user has stories
     const currentUserId = currentUser?._id?.toString() || currentUser?._id
     const userStories = stories.find(storyGroup => 
       storyGroup.author._id.toString() === currentUserId
     )
-    
     if (userStories) {
-      // User has stories, view them
       handleStoryClick(userStories)
     }
   }
-
   const handleCreateStoryClick = (e) => {
     e.stopPropagation() // Prevent triggering the image click
     setShowCreateModal(true)
   }
-
   const handleStoryClick = (storyGroup) => {
     setViewingStory(storyGroup)
   }
-
   const handleCloseViewer = () => {
     setViewingStory(null)
     fetchStories() // Refresh to update view counts
   }
-
   if (loading) {
     return <StoriesContainer>Loading stories...</StoriesContainer>
   }
-
   return (
     <>
       <StoriesContainer>
         <StoriesScroll>
-          {/* Current User's Story Circle */}
+          {}
           {(() => {
             const currentUserId = currentUser?._id
             const userStories = stories.find(storyGroup => 
               storyGroup.author._id === currentUserId
             )
             const hasStories = !!userStories
-
             return (
               <div style={{ position: 'relative', display: 'inline-block' }}>
                 <StoryCircle onClick={hasStories ? () => handleStoryClick(userStories) : undefined}>
@@ -165,11 +143,10 @@ const Stories = () => {
                       } 
                       alt="Your story"
                     />
-                    {/* Always show plus icon */}
+                    {}
                     <div
                       onClick={(e) => {
                         e.stopPropagation()
-                        // Check profile completion before allowing story creation
                         if (!hasCompletedProfile(currentUser)) {
                           promptProfileCompletion(navigate)
                         } else {
@@ -199,8 +176,7 @@ const Stories = () => {
               </div>
             )
           })()}
-
-          {/* Other users' stories (excluding current user) */}
+          {}
           {stories
             .filter(storyGroup => {
               const isCurrentUser = storyGroup.author._id === currentUser?._id
@@ -238,7 +214,6 @@ const Stories = () => {
             ))}
         </StoriesScroll>
       </StoriesContainer>
-
       {showCreateModal && (
         <CreateStoryModal>
           <ModalOverlay onClick={() => setShowCreateModal(false)} />
@@ -282,7 +257,6 @@ const Stories = () => {
           </ModalContent>
         </CreateStoryModal>
       )}
-
       {viewingStory && (
         <StoryViewer 
           storyGroup={viewingStory} 
@@ -292,5 +266,4 @@ const Stories = () => {
     </>
   )
 }
-
 export default Stories

@@ -27,7 +27,6 @@ import {
   MessageButton,
   EmptyState
 } from './Shopping.styled'
-
 const categories = [
   'All', 
   'Electronics', 
@@ -50,31 +49,25 @@ const categories = [
   'Services',
   'Other'
 ]
-
 function Shopping() {
   const navigate = useNavigate()
   const [products, setProducts] = useState([])
   const [loading, setLoading] = useState(true)
   const [selectedCategory, setSelectedCategory] = useState('All')
   const [searchQuery, setSearchQuery] = useState('')
-
   useEffect(() => {
     fetchProducts()
   }, [selectedCategory, searchQuery])
-
   const fetchProducts = async () => {
     try {
       const params = new URLSearchParams()
       if (selectedCategory !== 'All') params.append('category', selectedCategory)
       if (searchQuery) params.append('search', searchQuery)
-
       console.log('Fetching products with params:', params.toString())
       const response = await fetch(`http://localhost:5000/api/products?${params}`)
       console.log('Response status:', response.status)
-      
       const data = await response.json()
       console.log('Products data:', data)
-      
       if (data.success) {
         console.log('Products found:', data.products.length)
         setProducts(data.products)
@@ -87,11 +80,9 @@ function Shopping() {
       setLoading(false)
     }
   }
-
   const handleProductClick = (productId) => {
     navigate(`/shopping/${productId}`)
   }
-
   const handleLike = async (e, productId) => {
     e.stopPropagation()
     try {
@@ -102,21 +93,16 @@ function Shopping() {
           'Authorization': `Bearer ${token}`
         }
       })
-      
       if (response.ok) {
-        // Refresh products
         fetchProducts()
       }
     } catch (error) {
       console.error('Failed to like product:', error)
     }
   }
-
   const handleMessage = async (e, product) => {
     e.stopPropagation()
-    
     const message = prompt(`Send a message to ${product.business?.user_info?.fullName} about "${product.name}":`);
-    
     if (message && message.trim()) {
       try {
         const token = localStorage.getItem('token')
@@ -128,9 +114,7 @@ function Shopping() {
           },
           body: JSON.stringify({ message: message.trim() })
         })
-        
         const data = await response.json()
-        
         if (data.success) {
           alert('Message sent successfully! The seller will see your inquiry.')
         } else {
@@ -142,12 +126,10 @@ function Shopping() {
       }
     }
   }
-
   const handleBuy = (e, product) => {
     e.stopPropagation()
     alert(`Purchase feature coming soon!\n\nProduct: ${product.name}\nPrice: $${product.price}\nSeller: ${product.business?.user_info?.fullName}`)
   }
-
   if (loading) {
     return (
       <ShoppingContainer>
@@ -157,7 +139,6 @@ function Shopping() {
       </ShoppingContainer>
     )
   }
-
   return (
     <ShoppingContainer>
       <Header>
@@ -175,7 +156,6 @@ function Shopping() {
           />
         </SearchBar>
       </Header>
-
       <FilterSection>
         <CategoryTabs>
           {categories.map((category) => (
@@ -189,7 +169,6 @@ function Shopping() {
           ))}
         </CategoryTabs>
       </FilterSection>
-
       {products.length === 0 ? (
         <EmptyState>
           <ShoppingBag size={64} />
@@ -211,7 +190,6 @@ function Shopping() {
               <ProductInfo>
                 <ProductName>{product.name}</ProductName>
                 <ProductPrice>${product.price.toFixed(2)}</ProductPrice>
-                
                 <ProductBusiness>
                   <BusinessAvatar
                     src={
@@ -223,7 +201,6 @@ function Shopping() {
                   />
                   <BusinessName>{product.business?.user_info?.fullName}</BusinessName>
                 </ProductBusiness>
-
                 <ProductStats>
                   <StatItem>
                     <Eye size={16} />
@@ -238,7 +215,6 @@ function Shopping() {
                     {product.inquiriesCount}
                   </StatItem>
                 </ProductStats>
-
                 <ProductActions>
                   <LikeButton onClick={(e) => handleLike(e, product._id)}>
                     <Heart size={18} />
@@ -261,5 +237,4 @@ function Shopping() {
     </ShoppingContainer>
   )
 }
-
 export default Shopping

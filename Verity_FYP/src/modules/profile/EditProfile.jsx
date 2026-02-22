@@ -21,7 +21,6 @@ import {
   CancelButton,
   ButtonGroup
 } from './EditProfile.styled'
-
 function EditProfile() {
   const navigate = useNavigate()
   const [formData, setFormData] = useState({
@@ -33,16 +32,13 @@ function EditProfile() {
   })
   const [avatarFile, setAvatarFile] = useState(null)
   const [loading, setLoading] = useState(false)
-
   useEffect(() => {
     loadProfile()
   }, [])
-
   const loadProfile = async () => {
     try {
       const response = await getProfile()
       const user = response.user
-      
       setFormData({
         firstName: user.firstName || '',
         lastName: user.lastName || '',
@@ -52,7 +48,6 @@ function EditProfile() {
       })
     } catch (error) {
       console.error('Failed to load profile:', error)
-      // Fallback to localStorage
       const user = getCurrentUser()
       if (user) {
         const nameParts = user.fullName?.split(' ') || []
@@ -66,7 +61,6 @@ function EditProfile() {
       }
     }
   }
-
   const handleChange = (e) => {
     const { name, value } = e.target
     setFormData(prev => ({
@@ -74,7 +68,6 @@ function EditProfile() {
       [name]: value
     }))
   }
-
   const handleImageChange = (e) => {
     const file = e.target.files[0]
     if (file) {
@@ -89,24 +82,19 @@ function EditProfile() {
       reader.readAsDataURL(file)
     }
   }
-
   const handleSubmit = async (e) => {
     e.preventDefault()
     setLoading(true)
-
     try {
       const formDataToSend = new FormData()
       formDataToSend.append('firstName', formData.firstName)
       formDataToSend.append('lastName', formData.lastName)
       formDataToSend.append('bio', formData.bio)
       formDataToSend.append('website', formData.website)
-      
       if (avatarFile) {
         formDataToSend.append('avatar', avatarFile)
       }
-
       const response = await updateProfile(formDataToSend)
-      
       alert('Profile updated successfully!')
       navigate('/profile')
     } catch (error) {
@@ -115,7 +103,6 @@ function EditProfile() {
       setLoading(false)
     }
   }
-
   return (
     <EditContainer>
       <EditHeader>
@@ -124,7 +111,6 @@ function EditProfile() {
         </BackButton>
         <EditTitle>Edit Profile</EditTitle>
       </EditHeader>
-
       <EditForm onSubmit={handleSubmit}>
         <ProfileImageEdit>
           <ProfileImageWrapper>
@@ -144,7 +130,6 @@ function EditProfile() {
             />
           </ProfileImageWrapper>
         </ProfileImageEdit>
-
         <FormGroup>
           <Label>First Name</Label>
           <Input
@@ -156,7 +141,6 @@ function EditProfile() {
             required
           />
         </FormGroup>
-
         <FormGroup>
           <Label>Last Name</Label>
           <Input
@@ -167,7 +151,6 @@ function EditProfile() {
             placeholder="Enter your last name"
           />
         </FormGroup>
-
         <FormGroup>
           <Label>Bio</Label>
           <TextArea
@@ -180,7 +163,6 @@ function EditProfile() {
           />
           <CharCount>{formData.bio.length}/150</CharCount>
         </FormGroup>
-
         <FormGroup>
           <Label>Website</Label>
           <Input
@@ -191,7 +173,6 @@ function EditProfile() {
             placeholder="https://yourwebsite.com"
           />
         </FormGroup>
-
         <ButtonGroup>
           <SaveButton type="submit" disabled={loading}>
             {loading ? 'Saving...' : 'Save Changes'}
@@ -204,5 +185,4 @@ function EditProfile() {
     </EditContainer>
   )
 }
-
 export default EditProfile

@@ -9,7 +9,6 @@ import {
   Footer, SignUpLink,
   RoleDropdownContainer, RoleButton, RoleIcon, RoleDropdownIcon, DropdownMenu, DropdownItem,
 } from './Login.styled'
-
 const Signup = () => {
   const navigate = useNavigate()
   const [formData, setFormData] = useState({ fullName: '', email: '', password: '', confirmPassword: '', role: 'User' })
@@ -18,96 +17,71 @@ const Signup = () => {
   const [error, setError] = useState('')
   const [showPassword, setShowPassword] = useState(false)
   const [showConfirmPassword, setShowConfirmPassword] = useState(false)
-
   const roles = ['User', 'Reviewer', 'Business']
-
   const handleChange = (e) => {
     setFormData({ ...formData, [e.target.name]: e.target.value })
     setError('') // Clear error when user types
   }
-
   const validateName = (name) => {
-    // Check if name contains numbers
     if (/\d/.test(name)) {
       return 'Name cannot contain numbers'
     }
-    // Check if name has at least 2 characters
     if (name.trim().length < 2) {
       return 'Name must be at least 2 characters'
     }
-    // Check if name contains only letters and spaces
     if (!/^[a-zA-Z\s]+$/.test(name)) {
       return 'Name can only contain letters and spaces'
     }
     return null
   }
-
   const validateEmail = (email) => {
-    // Comprehensive email validation
     const emailRegex = /^[a-zA-Z0-9._-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/
     if (!emailRegex.test(email)) {
       return 'Email is incorrect. Please enter a valid email (e.g., user@gmail.com)'
     }
     return null
   }
-
   const validatePassword = (password) => {
-    // Check minimum length
     if (password.length < 8) {
       return 'Password must be at least 8 characters long'
     }
-    // Check for at least one uppercase letter
     if (!/[A-Z]/.test(password)) {
       return 'Password must contain at least one uppercase letter'
     }
-    // Check for at least one number
     if (!/\d/.test(password)) {
       return 'Password must contain at least one number'
     }
     return null
   }
-
   const handleSubmit = async (e) => {
     e.preventDefault()
     setError('')
-    
-    // Validate name
     const nameError = validateName(formData.fullName)
     if (nameError) {
       setError(nameError)
       return
     }
-
-    // Validate email
     const emailError = validateEmail(formData.email)
     if (emailError) {
       setError(emailError)
       return
     }
-
-    // Validate password
     const passwordError = validatePassword(formData.password)
     if (passwordError) {
       setError(passwordError)
       return
     }
-
-    // Check if passwords match
     if (formData.password !== formData.confirmPassword) {
       setError('Passwords do not match!')
       return
     }
-
     setLoading(true)
-
     try {
       const { confirmPassword, ...userData } = formData
       console.log('Signing up with role:', userData.role)
       const response = await signup(userData)
       console.log('Signup response:', response)
       alert(`Account created! Welcome ${response.user.fullName} as ${response.user.role}`)
-      
-      // Redirect based on role
       if (response.user.role === 'Business') {
         window.location.href = '/dashboard'
       } else if (response.user.role === 'Reviewer') {
@@ -121,7 +95,6 @@ const Signup = () => {
       setLoading(false)
     }
   }
-
   return (
     <PageContainer>
       <OuterCard>
@@ -129,15 +102,12 @@ const Signup = () => {
           <AvatarContainer>
             <UserCircle />
           </AvatarContainer>
-
           <LogoContainer>
             <LogoBox><Check size={16} /></LogoBox>
             <BrandName>Verity</BrandName>
           </LogoContainer>
-
           <Heading>Create Account</Heading>
           <Subheading>Join Verity and start sharing verified content</Subheading>
-
           {error && (
             <div style={{ 
               width: '100%',
@@ -151,7 +121,6 @@ const Signup = () => {
               {error}
             </div>
           )}
-
           <Form onSubmit={handleSubmit}>
             <RoleDropdownContainer>
               <RoleButton 
@@ -184,7 +153,6 @@ const Signup = () => {
                 ))}
               </DropdownMenu>
             </RoleDropdownContainer>
-
             <InputWrapper>
               <InputIcon>
                 <UserCircle />
@@ -201,7 +169,6 @@ const Signup = () => {
                 title="Name can only contain letters and spaces"
               />
             </InputWrapper>
-
             <InputWrapper>
               <InputIcon>
                 <Mail />
@@ -218,7 +185,6 @@ const Signup = () => {
                 title="Please enter a valid email address"
               />
             </InputWrapper>
-
             <InputWrapper>
               <InputIcon>
                 <Lock />
@@ -242,7 +208,6 @@ const Signup = () => {
                 {showPassword ? <EyeOff /> : <Eye />}
               </PasswordToggle>
             </InputWrapper>
-
             <InputWrapper>
               <InputIcon>
                 <Lock />
@@ -266,12 +231,10 @@ const Signup = () => {
                 {showConfirmPassword ? <EyeOff /> : <Eye />}
               </PasswordToggle>
             </InputWrapper>
-
             <SignInButton type="submit" disabled={loading}>
               {loading ? 'Creating Account...' : 'Create Account'}
             </SignInButton>
           </Form>
-
           <Footer>
             Already have an account? <SignUpLink onClick={() => navigate('/')}>Sign in</SignUpLink>
           </Footer>
@@ -280,5 +243,4 @@ const Signup = () => {
     </PageContainer>
   )
 }
-
 export default Signup

@@ -2,7 +2,6 @@ import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { CheckCircle, XCircle, Clock, Award, TrendingUp, LayoutDashboard, FileCheck, History, LogOut } from 'lucide-react'
 import { getCurrentUser, getPendingReviews, submitReview, logout } from '../../services/api'
-
 function ReviewCenterSimple() {
   const user = getCurrentUser()
   const navigate = useNavigate()
@@ -17,11 +16,9 @@ function ReviewCenterSimple() {
     reviewed: 0,
     accuracy: 95
   })
-
   useEffect(() => {
     loadPendingReviews()
   }, [])
-
   const loadPendingReviews = async () => {
     try {
       const response = await getPendingReviews()
@@ -34,13 +31,11 @@ function ReviewCenterSimple() {
       setLoading(false)
     }
   }
-
   const handleLogout = () => {
     logout()
     navigate('/')
     window.location.reload()
   }
-
   const handleApprove = async (post) => {
     try {
       await submitReview({
@@ -51,7 +46,6 @@ function ReviewCenterSimple() {
         sources: [],
         tags: ['approved']
       })
-      
       setPosts(prev => prev.filter(p => p._id !== post._id))
       setStats(prev => ({ ...prev, pending: prev.pending - 1, reviewed: prev.reviewed + 1 }))
       alert('Post approved! It will now appear in the feed.')
@@ -59,18 +53,15 @@ function ReviewCenterSimple() {
       alert(`Failed to approve post: ${error.message}`)
     }
   }
-
   const handleReject = (post) => {
     setSelectedPost(post)
     setShowRejectModal(true)
   }
-
   const submitRejection = async () => {
     if (!rejectionNotes.trim()) {
       alert('Please provide a reason for rejection')
       return
     }
-
     try {
       await submitReview({
         postId: selectedPost._id,
@@ -80,30 +71,25 @@ function ReviewCenterSimple() {
         sources: [],
         tags: ['rejected']
       })
-
       setPosts(prev => prev.filter(p => p._id !== selectedPost._id))
       setStats(prev => ({ ...prev, pending: prev.pending - 1, reviewed: prev.reviewed + 1 }))
       setShowRejectModal(false)
       setRejectionNotes('')
       setSelectedPost(null)
-      
       alert('Post rejected successfully!')
     } catch (error) {
       alert(`Failed to reject post: ${error.message}`)
     }
   }
-
   const formatTime = (timestamp) => {
     const date = new Date(timestamp)
     const now = new Date()
     const diff = Math.floor((now - date) / 1000)
-
     if (diff < 60) return 'Just now'
     if (diff < 3600) return `${Math.floor(diff / 60)} minutes ago`
     if (diff < 86400) return `${Math.floor(diff / 3600)} hours ago`
     return `${Math.floor(diff / 86400)} days ago`
   }
-
   if (loading) {
     return (
       <div style={{ padding: '2rem', textAlign: 'center' }}>
@@ -111,10 +97,9 @@ function ReviewCenterSimple() {
       </div>
     )
   }
-
   return (
     <div style={{ display: 'flex', minHeight: '100vh', backgroundColor: '#f8fafc' }}>
-      {/* Sidebar */}
+      {}
       <aside style={{
         width: '280px',
         minWidth: '280px',
@@ -128,15 +113,14 @@ function ReviewCenterSimple() {
         top: 0
       }}>
         <div style={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
-          {/* Logo */}
+          {}
           <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '50px' }}>
             <div style={{ backgroundColor: '#14b8a6', padding: '8px', borderRadius: '10px' }}>
               <FileCheck size={24} color="white" />
             </div>
             <span style={{ fontWeight: '900', fontSize: '20px' }}>VERITY REVIEW</span>
           </div>
-
-          {/* Stats Cards */}
+          {}
           <div style={{ marginBottom: '30px' }}>
             <div style={{ backgroundColor: '#1e293b', padding: '15px', borderRadius: '12px', marginBottom: '10px' }}>
               <div style={{ fontSize: '12px', color: '#94a3b8', marginBottom: '5px' }}>PENDING REVIEWS</div>
@@ -151,8 +135,7 @@ function ReviewCenterSimple() {
               <div style={{ fontSize: '28px', fontWeight: '900', color: '#10b981' }}>{stats.accuracy}%</div>
             </div>
           </div>
-
-          {/* Navigation */}
+          {}
           <nav style={{ flex: 1 }}>
             <div 
               onClick={() => setActiveTab('pending')}
@@ -207,8 +190,7 @@ function ReviewCenterSimple() {
             </div>
           </nav>
         </div>
-
-        {/* Logout Button */}
+        {}
         <div 
           onClick={handleLogout}
           style={{
@@ -230,10 +212,9 @@ function ReviewCenterSimple() {
           <LogOut size={20} /> Log Out
         </div>
       </aside>
-
-      {/* Main Content */}
+      {}
       <main style={{ flex: 1, padding: '2rem' }}>
-        {/* Header */}
+        {}
         <div style={{ marginBottom: '2rem' }}>
           <div style={{ backgroundColor: 'white', padding: '1.5rem', borderRadius: '12px', boxShadow: '0 1px 3px rgba(0,0,0,0.1)' }}>
             <h1 style={{ margin: 0, fontSize: '1.5rem', fontWeight: '900' }}>Pending Reviews</h1>
@@ -242,8 +223,7 @@ function ReviewCenterSimple() {
             </p>
           </div>
         </div>
-
-        {/* Posts Grid */}
+        {}
         <div style={{ maxWidth: '1200px' }}>
         {posts.length === 0 ? (
           <div style={{ textAlign: 'center', padding: '3rem', backgroundColor: 'white', borderRadius: '12px' }}>
@@ -253,7 +233,7 @@ function ReviewCenterSimple() {
           <div style={{ display: 'grid', gap: '1.5rem' }}>
             {posts.map((post) => (
               <div key={post._id} style={{ backgroundColor: 'white', borderRadius: '12px', padding: '1.5rem', boxShadow: '0 1px 3px rgba(0,0,0,0.1)' }}>
-                {/* Author Info */}
+                {}
                 <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', marginBottom: '1rem' }}>
                   <img 
                     src={post.author?.avatar || 'https://via.placeholder.com/50'} 
@@ -267,13 +247,11 @@ function ReviewCenterSimple() {
                     </div>
                   </div>
                 </div>
-
-                {/* Post Content */}
+                {}
                 <div style={{ marginBottom: '1rem' }}>
                   <p style={{ margin: 0, lineHeight: '1.6' }}>{post.content}</p>
                 </div>
-
-                {/* Post Media */}
+                {}
                 {post.media && post.media.length > 0 && (
                   <div style={{ marginBottom: '1rem' }}>
                     {post.media.map((item, idx) => (
@@ -292,8 +270,7 @@ function ReviewCenterSimple() {
                     ))}
                   </div>
                 )}
-
-                {/* Action Buttons */}
+                {}
                 <div style={{ display: 'flex', gap: '1rem', marginTop: '1.5rem' }}>
                   <button
                     onClick={() => handleApprove(post)}
@@ -340,8 +317,7 @@ function ReviewCenterSimple() {
         )}
         </div>
       </main>
-
-      {/* Reject Modal */}
+      {}
       {showRejectModal && (
         <div style={{
           position: 'fixed',
@@ -420,5 +396,4 @@ function ReviewCenterSimple() {
     </div>
   )
 }
-
 export default ReviewCenterSimple

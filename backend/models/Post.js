@@ -1,7 +1,5 @@
 import mongoose from 'mongoose'
-
 const postSchema = new mongoose.Schema({
-  // Author Information
   author: {
     type: mongoose.Schema.Types.ObjectId,
     refPath: 'authorModel',
@@ -12,8 +10,6 @@ const postSchema = new mongoose.Schema({
     required: true,
     enum: ['User', 'Reviewer', 'Business']
   },
-  
-  // Content
   content: {
     type: String,
     required: true,
@@ -31,23 +27,17 @@ const postSchema = new mongoose.Schema({
     size: Number,
     duration: Number
   }],
-  
-  // Categorization
   hashtags: [String],
   mentions: [{
     type: mongoose.Schema.Types.ObjectId,
     refPath: 'mentions.userModel'
   }],
   location: String,
-  
-  // Visibility & Privacy
   visibility: {
     type: String,
     enum: ['public', 'private', 'connections'],
     default: 'public'
   },
-  
-  // Verification Status
   verificationStatus: {
     type: String,
     enum: ['pending', 'approved', 'rejected'],
@@ -63,8 +53,6 @@ const postSchema = new mongoose.Schema({
   },
   reviewedAt: Date,
   reviewNotes: String,
-  
-  // Engagement
   likes: [{
     user: {
       type: mongoose.Schema.Types.ObjectId,
@@ -83,7 +71,6 @@ const postSchema = new mongoose.Schema({
     type: Number,
     default: 0
   },
-  
   comments: [{
     user: {
       type: mongoose.Schema.Types.ObjectId,
@@ -111,7 +98,6 @@ const postSchema = new mongoose.Schema({
     type: Number,
     default: 0
   },
-  
   shares: [{
     user: {
       type: mongoose.Schema.Types.ObjectId,
@@ -130,8 +116,6 @@ const postSchema = new mongoose.Schema({
     type: Number,
     default: 0
   },
-  
-  // Analytics
   views: {
     type: Number,
     default: 0
@@ -144,8 +128,6 @@ const postSchema = new mongoose.Schema({
     type: Number,
     default: 0
   },
-  
-  // Flags & Reports
   reports: [{
     reportedBy: mongoose.Schema.Types.ObjectId,
     reason: {
@@ -162,8 +144,6 @@ const postSchema = new mongoose.Schema({
     type: Number,
     default: 0
   },
-  
-  // Status
   isActive: {
     type: Boolean,
     default: true
@@ -176,6 +156,5 @@ const postSchema = new mongoose.Schema({
 }, { 
   timestamps: true 
 })
-
 const Post = mongoose.model('Post', postSchema)
 export default Post

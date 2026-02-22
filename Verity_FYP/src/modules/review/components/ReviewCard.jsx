@@ -14,11 +14,10 @@ import {
   ApproveButton,
   RejectButton,
 } from '../ReviewCenter.styled'
-
 function ReviewCard({ post, onApprove, onReject }) {
   return (
     <StyledReviewCard>
-      {/* Header */}
+      {}
       <ReviewCardHeader>
         <AuthorInfo>
           <AuthorAvatar src={post.author.avatar} alt={post.author.name} />
@@ -30,8 +29,7 @@ function ReviewCard({ post, onApprove, onReject }) {
           </AuthorDetails>
         </AuthorInfo>
       </ReviewCardHeader>
-
-      {/* Post Content */}
+      {}
       <PostContent>
         <PostText>{post.text}</PostText>
         {console.log('Post ID:', post.id, 'Image URL:', post.image)}
@@ -47,8 +45,7 @@ function ReviewCard({ post, onApprove, onReject }) {
           </div>
         )}
       </PostContent>
-
-      {/* Status Badge for reviewed posts */}
+      {}
       {post.status !== 'pending' && (
         <div style={{
           padding: '0.75rem',
@@ -81,8 +78,7 @@ function ReviewCard({ post, onApprove, onReject }) {
           )}
         </div>
       )}
-
-      {/* Action Buttons - Only show for pending posts */}
+      {}
       {post.status === 'pending' && (
         <ActionButtonsRow>
           <ApproveButton onClick={() => onApprove(post.id)}>
@@ -97,5 +93,4 @@ function ReviewCard({ post, onApprove, onReject }) {
     </StyledReviewCard>
   )
 }
-
 export default ReviewCard

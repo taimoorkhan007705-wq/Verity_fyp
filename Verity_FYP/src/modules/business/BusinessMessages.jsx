@@ -1,14 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import { MessageSquare, Package } from 'lucide-react';
-
 const BusinessMessages = () => {
   const [inquiries, setInquiries] = useState([]);
   const [loading, setLoading] = useState(true);
-
   useEffect(() => {
     loadInquiries();
   }, []);
-
   const loadInquiries = async () => {
     try {
       const token = localStorage.getItem('token');
@@ -17,11 +14,8 @@ const BusinessMessages = () => {
           'Authorization': `Bearer ${token}`
         }
       });
-      
       const data = await response.json();
-      
       if (data.success) {
-        // Extract all inquiries from all products
         const allInquiries = [];
         data.products.forEach(product => {
           if (product.inquiries && product.inquiries.length > 0) {
@@ -45,8 +39,6 @@ const BusinessMessages = () => {
             });
           }
         });
-        
-        // Sort by most recent
         allInquiries.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
         setInquiries(allInquiries);
       }
@@ -56,19 +48,16 @@ const BusinessMessages = () => {
       setLoading(false);
     }
   };
-
   const formatTime = (timestamp) => {
     const date = new Date(timestamp);
     const now = new Date();
     const diff = Math.floor((now - date) / 1000);
-
     if (diff < 60) return 'Just now';
     if (diff < 3600) return `${Math.floor(diff / 60)}m ago`;
     if (diff < 86400) return `${Math.floor(diff / 3600)}h ago`;
     if (diff < 604800) return `${Math.floor(diff / 86400)}d ago`;
     return date.toLocaleDateString();
   };
-
   if (loading) {
     return (
       <div style={{ textAlign: 'center', padding: '3rem', color: '#64748b' }}>
@@ -76,7 +65,6 @@ const BusinessMessages = () => {
       </div>
     );
   }
-
   if (inquiries.length === 0) {
     return (
       <div style={{ 
@@ -96,7 +84,6 @@ const BusinessMessages = () => {
       </div>
     );
   }
-
   return (
     <div style={{ 
       backgroundColor: 'white', 
@@ -115,7 +102,6 @@ const BusinessMessages = () => {
           Customer Inquiries ({inquiries.length})
         </h2>
       </div>
-      
       <div style={{ flex: 1, overflowY: 'auto' }}>
         {inquiries.map((inquiry) => (
           <div 
@@ -157,7 +143,6 @@ const BusinessMessages = () => {
                 </div>
               </div>
             </div>
-            
             <div style={{ 
               backgroundColor: '#f0fdfa', 
               padding: '0.875rem', 
@@ -169,7 +154,6 @@ const BusinessMessages = () => {
                 {inquiry.message}
               </p>
             </div>
-            
             <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
               <Package size={16} style={{ color: '#6b7280' }} />
               <span style={{ fontSize: '0.85rem', color: '#6b7280', fontWeight: '600' }}>
@@ -182,5 +166,4 @@ const BusinessMessages = () => {
     </div>
   );
 };
-
 export default BusinessMessages;

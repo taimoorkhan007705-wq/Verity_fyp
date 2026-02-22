@@ -1,8 +1,6 @@
 import mongoose from 'mongoose';
 import bcrypt from 'bcryptjs';
-
 const userSchema = new mongoose.Schema({
-  // Core Authentication (Always visible)
   email: {
     type: String,
     required: [true, 'Email is required'],
@@ -20,8 +18,6 @@ const userSchema = new mongoose.Schema({
     enum: ['User', 'Reviewer', 'Business', 'Admin'],
     default: 'User'
   },
-  
-  // User Info (Collapsible in DB viewer)
   user_info: {
     firstName: {
       type: String,
@@ -51,8 +47,6 @@ const userSchema = new mongoose.Schema({
       default: ''
     }
   },
-  
-  // Profile Info (Collapsible in DB viewer)
   profile_info: {
     avatar: {
       type: String,
@@ -72,8 +66,6 @@ const userSchema = new mongoose.Schema({
       default: ''
     }
   },
-  
-  // Social Stats (Collapsible in DB viewer)
   social_stats: {
     followersCount: {
       type: Number,
@@ -88,8 +80,6 @@ const userSchema = new mongoose.Schema({
       default: 0
     }
   },
-  
-  // Trust & Security (Collapsible in DB viewer)
   trust_security: {
     trustScore: {
       type: Number,
@@ -118,8 +108,6 @@ const userSchema = new mongoose.Schema({
       default: 0
     }
   },
-  
-  // Activity Tracking (Collapsible in DB viewer)
   activity_tracking: {
     lastActive: {
       type: Date,
@@ -134,8 +122,6 @@ const userSchema = new mongoose.Schema({
       default: 0
     }
   },
-  
-  // Preferences (Collapsible in DB viewer)
   preferences: {
     language: {
       type: String,
@@ -154,8 +140,6 @@ const userSchema = new mongoose.Schema({
       follows: { type: Boolean, default: true }
     }
   },
-  
-  // OAuth (Collapsible in DB viewer)
   oauth: {
     googleId: {
       type: String
@@ -167,10 +151,7 @@ const userSchema = new mongoose.Schema({
 }, {
   timestamps: true
 });
-
-// Hash password before saving
 userSchema.pre('save', async function(next) {
-  // Clean duplicate names
   if (this.isModified('user_info.fullName') && this.user_info.fullName) {
     const nameParts = this.user_info.fullName.trim().split(/\s+/)
     const uniqueParts = [...new Set(nameParts.map(part => part.toLowerCase()))]
@@ -178,9 +159,7 @@ userSchema.pre('save', async function(next) {
       part.charAt(0).toUpperCase() + part.slice(1).toLowerCase()
     ).join(' ')
   }
-
   if (!this.isModified('password')) return next();
-  
   try {
     const salt = await bcrypt.genSalt(10);
     this.password = await bcrypt.hash(this.password, salt);
@@ -189,12 +168,8 @@ userSchema.pre('save', async function(next) {
     next(error);
   }
 });
-
-// Compare password method
 userSchema.methods.comparePassword = async function(candidatePassword) {
   return await bcrypt.compare(candidatePassword, this.password);
 };
-
 const User = mongoose.model('User', userSchema);
-
 export default User;

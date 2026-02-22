@@ -2,7 +2,6 @@ import { useState, useEffect } from 'react'
 import { Award, TrendingUp, ArrowLeft, CheckCircle, XCircle, Clock, Target } from 'lucide-react'
 import { useNavigate } from 'react-router-dom'
 import { getCurrentUser, getReviewerStats } from '../../services/api'
-
 function ReviewerDashboard() {
   const user = getCurrentUser()
   const navigate = useNavigate()
@@ -14,11 +13,9 @@ function ReviewerDashboard() {
     accuracy: 0
   })
   const [loading, setLoading] = useState(true)
-
   useEffect(() => {
     loadStats()
   }, [])
-
   const loadStats = async () => {
     try {
       const response = await getReviewerStats()
@@ -29,14 +26,12 @@ function ReviewerDashboard() {
       setLoading(false)
     }
   }
-
   const getTrustScoreColor = (score) => {
     if (score >= 90) return '#10b981'
     if (score >= 80) return '#14b8a6'
     if (score >= 70) return '#f59e0b'
     return '#ef4444'
   }
-
   if (loading) {
     return (
       <div style={{ 
@@ -50,7 +45,6 @@ function ReviewerDashboard() {
       </div>
     )
   }
-
   return (
     <div style={{ 
       padding: '2rem', 
@@ -59,7 +53,7 @@ function ReviewerDashboard() {
       maxWidth: '1200px',
       margin: '0 auto'
     }}>
-      {/* Back Button */}
+      {}
       <button 
         onClick={() => navigate('/review-center')}
         style={{ 
@@ -78,8 +72,7 @@ function ReviewerDashboard() {
       >
         <ArrowLeft size={20} /> Back to Review Center
       </button>
-
-      {/* Header */}
+      {}
       <div style={{ marginBottom: '2rem' }}>
         <h1 style={{ 
           fontSize: '2rem', 
@@ -97,8 +90,7 @@ function ReviewerDashboard() {
           Your performance and statistics as a content reviewer
         </p>
       </div>
-
-      {/* Reviewer Profile Card */}
+      {}
       <div style={{ 
         backgroundColor: 'white', 
         borderRadius: '1rem', 
@@ -140,14 +132,13 @@ function ReviewerDashboard() {
             </div>
           </div>
         </div>
-
-        {/* Stats Grid */}
+        {}
         <div style={{ 
           display: 'grid', 
           gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))',
           gap: '1.5rem'
         }}>
-          {/* Total Reviews */}
+          {}
           <div style={{ 
             padding: '1.5rem',
             backgroundColor: '#f0fdfa',
@@ -173,8 +164,7 @@ function ReviewerDashboard() {
               {stats.totalReviews}
             </div>
           </div>
-
-          {/* Approved */}
+          {}
           <div style={{ 
             padding: '1.5rem',
             backgroundColor: '#f0fdf4',
@@ -200,8 +190,7 @@ function ReviewerDashboard() {
               {stats.approvedReviews}
             </div>
           </div>
-
-          {/* Rejected */}
+          {}
           <div style={{ 
             padding: '1.5rem',
             backgroundColor: '#fef2f2',
@@ -227,8 +216,7 @@ function ReviewerDashboard() {
               {stats.rejectedReviews}
             </div>
           </div>
-
-          {/* Pending */}
+          {}
           <div style={{ 
             padding: '1.5rem',
             backgroundColor: '#fffbeb',
@@ -256,8 +244,7 @@ function ReviewerDashboard() {
           </div>
         </div>
       </div>
-
-      {/* Accuracy Card */}
+      {}
       <div style={{ 
         backgroundColor: 'white', 
         borderRadius: '1rem', 
@@ -276,7 +263,6 @@ function ReviewerDashboard() {
           <TrendingUp size={24} color="#14b8a6" />
           Accuracy Score
         </h3>
-        
         <div style={{ 
           display: 'flex', 
           alignItems: 'center',
@@ -289,7 +275,6 @@ function ReviewerDashboard() {
           }}>
             {stats.accuracy}%
           </div>
-          
           <div style={{ flex: 1 }}>
             <div style={{ 
               width: '100%',
@@ -317,8 +302,7 @@ function ReviewerDashboard() {
           </div>
         </div>
       </div>
-
-      {/* Legend */}
+      {}
       <div style={{ 
         marginTop: '1.5rem',
         padding: '1rem',
@@ -350,5 +334,4 @@ function ReviewerDashboard() {
     </div>
   )
 }
-
 export default ReviewerDashboard

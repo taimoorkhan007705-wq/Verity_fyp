@@ -1,5 +1,4 @@
 import mongoose from 'mongoose'
-
 const storySchema = new mongoose.Schema({
   author: {
     type: mongoose.Schema.Types.ObjectId,
@@ -50,18 +49,12 @@ const storySchema = new mongoose.Schema({
 }, {
   timestamps: true
 })
-
-// Index for automatic deletion
 storySchema.index({ expiresAt: 1 }, { expireAfterSeconds: 0 })
-
-// Set expiration to 24 hours from creation
 storySchema.pre('save', function(next) {
   if (this.isNew) {
     this.expiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000) // 24 hours
   }
   next()
 })
-
 const Story = mongoose.model('Story', storySchema)
-
 export default Story

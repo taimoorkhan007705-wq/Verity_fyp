@@ -1,14 +1,10 @@
 import mongoose from 'mongoose'
-
 const productSchema = new mongoose.Schema({
-  // Business Owner
   business: {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'Business',
     required: true
   },
-  
-  // Product Information
   name: {
     type: String,
     required: [true, 'Product name is required'],
@@ -29,14 +25,10 @@ const productSchema = new mongoose.Schema({
     type: String,
     default: 'USD'
   },
-  
-  // Product Media
   images: [{
     url: String,
     thumbnail: String
   }],
-  
-  // Category & Tags
   category: {
     type: String,
     required: true,
@@ -63,8 +55,6 @@ const productSchema = new mongoose.Schema({
     ]
   },
   tags: [String],
-  
-  // Stock & Availability
   stock: {
     type: Number,
     default: 0,
@@ -74,8 +64,6 @@ const productSchema = new mongoose.Schema({
     type: Boolean,
     default: true
   },
-  
-  // Analytics
   views: {
     type: Number,
     default: 0
@@ -94,8 +82,6 @@ const productSchema = new mongoose.Schema({
       default: Date.now
     }
   }],
-  
-  // Engagement
   likes: [{
     user: {
       type: mongoose.Schema.Types.ObjectId,
@@ -114,8 +100,6 @@ const productSchema = new mongoose.Schema({
     type: Number,
     default: 0
   },
-  
-  // Messages/Inquiries
   inquiries: [{
     user: {
       type: mongoose.Schema.Types.ObjectId,
@@ -135,8 +119,6 @@ const productSchema = new mongoose.Schema({
     type: Number,
     default: 0
   },
-  
-  // Status
   isActive: {
     type: Boolean,
     default: true
@@ -148,11 +130,8 @@ const productSchema = new mongoose.Schema({
 }, { 
   timestamps: true 
 })
-
-// Index for faster queries
 productSchema.index({ business: 1, createdAt: -1 })
 productSchema.index({ category: 1 })
 productSchema.index({ isActive: 1 })
-
 const Product = mongoose.model('Product', productSchema)
 export default Product

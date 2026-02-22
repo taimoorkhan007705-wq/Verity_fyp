@@ -1,5 +1,4 @@
 import mongoose from 'mongoose'
-
 const reviewSchema = new mongoose.Schema({
   post: {
     type: mongoose.Schema.Types.ObjectId,
@@ -37,6 +36,5 @@ const reviewSchema = new mongoose.Schema({
   }],
   tags: [String]
 }, { timestamps: true })
-
 const Review = mongoose.model('Review', reviewSchema)
 export default Review

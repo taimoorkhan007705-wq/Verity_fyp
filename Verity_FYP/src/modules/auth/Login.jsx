@@ -9,7 +9,6 @@ import {
   Footer, SignUpLink,
   RoleDropdownContainer, RoleButton, RoleIcon, RoleDropdownIcon, DropdownMenu, DropdownItem,
 } from './Login.styled'
-
 const Login = () => {
   const navigate = useNavigate()
   const [formData, setFormData] = useState({ email: '', password: '', role: 'User' })
@@ -18,24 +17,18 @@ const Login = () => {
   const [error, setError] = useState('')
   const [showPassword, setShowPassword] = useState(false)
   const [rememberMe, setRememberMe] = useState(false)
-
   const roles = ['User', 'Reviewer', 'Business']
-
   const handleChange = (e) => {
     setFormData({ ...formData, [e.target.name]: e.target.value })
   }
-
   const handleSubmit = async (e) => {
     e.preventDefault()
     setError('')
     setLoading(true)
-
     try {
       const response = await login(formData)
       console.log('Login response:', response)
       alert(`Welcome back, ${response.user.fullName}!`)
-      
-      // Redirect based on role
       if (response.user.role === 'Business') {
         window.location.href = '/dashboard'
       } else if (response.user.role === 'Reviewer') {
@@ -49,7 +42,6 @@ const Login = () => {
       setLoading(false)
     }
   }
-
   return (
     <PageContainer>
       <OuterCard>
@@ -57,15 +49,12 @@ const Login = () => {
           <AvatarContainer>
             <User />
           </AvatarContainer>
-
           <LogoContainer>
             <LogoBox><Check size={16} /></LogoBox>
             <BrandName>Verity</BrandName>
           </LogoContainer>
-
           <Heading>Welcome Back</Heading>
           <Subheading>Sign in to your account</Subheading>
-
           {error && (
             <div style={{ 
               width: '100%',
@@ -79,7 +68,6 @@ const Login = () => {
               {error}
             </div>
           )}
-
           <Form onSubmit={handleSubmit}>
             <RoleDropdownContainer>
               <RoleButton 
@@ -111,7 +99,6 @@ const Login = () => {
                 ))}
               </DropdownMenu>
             </RoleDropdownContainer>
-
             <InputWrapper>
               <InputIcon>
                 <Mail />
@@ -126,7 +113,6 @@ const Login = () => {
                 disabled={loading} 
               />
             </InputWrapper>
-
             <InputWrapper>
               <InputIcon>
                 <Lock />
@@ -148,7 +134,6 @@ const Login = () => {
                 {showPassword ? <EyeOff /> : <Eye />}
               </PasswordToggle>
             </InputWrapper>
-
             <RememberMeContainer>
               <Checkbox 
                 type="checkbox" 
@@ -158,12 +143,10 @@ const Login = () => {
               />
               <RememberMeLabel htmlFor="rememberMe">Remember me</RememberMeLabel>
             </RememberMeContainer>
-
             <SignInButton type="submit" disabled={loading}>
               {loading ? 'Signing In...' : 'Sign In'}
             </SignInButton>
           </Form>
-
           <Footer>
             Don't have an account? <SignUpLink onClick={() => navigate('/signup')}>Sign up</SignUpLink>
           </Footer>
@@ -172,5 +155,4 @@ const Login = () => {
     </PageContainer>
   )
 }
-
 export default Login

@@ -1,5 +1,4 @@
 import styled from "styled-components";
-
 export const LayoutContainer = styled.div`
   width: 100%;
   height: 100vh;
@@ -9,7 +8,6 @@ export const LayoutContainer = styled.div`
   overflow: hidden;
   box-sizing: border-box;
 `;
-
 export const MainContent = styled.div`
   flex: 1;
   overflow-y: auto;
@@ -20,7 +18,6 @@ export const MainContent = styled.div`
   box-sizing: border-box;
   max-width: 100%;
 `;
-
 export const MobileToggleButton = styled.button`
   position: fixed;
   top: 1rem;
@@ -38,32 +35,26 @@ export const MobileToggleButton = styled.button`
   cursor: pointer;
   color: #4b5563;
   transition: all 0.2s ease-in-out;
-
   &:hover {
     background-color: #f9fafb;
   }
-
   &:active {
     transform: scale(0.95);
   }
-
   @media (min-width: 640px) {
     display: none;
   }
-
   svg {
     width: 1.5rem;
     height: 1.5rem;
   }
 `;
-
 export const Overlay = styled.div`
   position: fixed;
   inset: 0;
   background-color: rgba(0, 0, 0, 0.5);
   z-index: 25;
   display: ${(props) => (props.$isOpen ? "block" : "none")};
-
   @media (min-width: 640px) {
     display: none;
   }
