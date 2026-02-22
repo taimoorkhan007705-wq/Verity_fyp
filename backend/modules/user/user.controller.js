@@ -58,32 +58,26 @@ export const updateProfile = async (req, res) => {
       return res.status(404).json({ success: false, message: 'User not found' })
     }
 
-    // Initialize nested objects if they don't exist
     if (!user.user_info) user.user_info = {}
     if (!user.profile_info) user.profile_info = {}
     if (!user.social_stats) user.social_stats = {}
     if (!user.trust_security) user.trust_security = {}
 
-    // Update fields
     if (firstName) user.user_info.firstName = firstName
     if (lastName) user.user_info.lastName = lastName
     
-    // Update fullName
     const fullName = `${firstName || user.user_info.firstName || ''} ${lastName || user.user_info.lastName || ''}`.trim()
     user.user_info.fullName = fullName
 
     if (bio !== undefined) user.profile_info.bio = bio
     if (website !== undefined) user.profile_info.website = website
 
-    // Handle profile image upload
     if (req.file) {
-      // Create user profile directory if it doesn't exist
       const profileDir = path.join(process.cwd(), 'uploads', 'users', userId.toString(), 'profile')
       if (!fs.existsSync(profileDir)) {
         fs.mkdirSync(profileDir, { recursive: true })
       }
 
-      // Delete old profile image if exists
       if (user.profile_info.avatar && user.profile_info.avatar.startsWith('/uploads')) {
         const oldImagePath = path.join(process.cwd(), user.profile_info.avatar)
         if (fs.existsSync(oldImagePath)) {
@@ -91,7 +85,6 @@ export const updateProfile = async (req, res) => {
         }
       }
 
-      // Set new avatar path
       user.profile_info.avatar = `/uploads/users/${userId}/profile/${req.file.filename}`
     }
 
@@ -126,7 +119,6 @@ export const getUserById = async (req, res) => {
   try {
     const { userId } = req.params
 
-    // Try to find user in all collections
     let user = await User.findById(userId).select('-password')
     let userRole = 'User'
 
@@ -161,10 +153,8 @@ export const getUserById = async (req, res) => {
         followingCount: user.social_stats?.followingCount || 0,
         postsCount: user.social_stats?.postsCount || 0,
         isVerified: user.trust_security?.isVerified || false,
-        // Business specific fields
         businessType: user.business_details?.businessType || null,
         businessName: user.business_details?.businessName || null,
-        // Reviewer specific fields
         reviewsCompleted: user.reviewer_stats?.reviewsCompleted || 0,
         accuracy: user.reviewer_stats?.accuracy || 0
       }
@@ -179,7 +169,6 @@ export const deleteUser = async (req, res) => {
     const { userId } = req.params
     const requesterId = req.user.id
 
-    // Check if user is trying to delete their own account
     if (userId !== requesterId) {
       return res.status(403).json({ 
         success: false, 
@@ -187,7 +176,6 @@ export const deleteUser = async (req, res) => {
       })
     }
 
-    // Try to find and delete user from all collections
     let deletedUser = await User.findByIdAndDelete(userId)
     let userRole = 'User'
 
@@ -205,7 +193,6 @@ export const deleteUser = async (req, res) => {
       return res.status(404).json({ success: false, message: 'User not found' })
     }
 
-    // Delete user's uploaded files
     const userUploadDir = path.join(process.cwd(), 'uploads', 'users', userId)
     if (fs.existsSync(userUploadDir)) {
       fs.rmSync(userUploadDir, { recursive: true, force: true })

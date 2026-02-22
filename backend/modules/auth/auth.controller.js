@@ -12,7 +12,6 @@ const getModelByRole = (role) => {
   return models[role] || User
 }
 
-// Helper function to clean duplicate names
 const cleanFullName = (fullName) => {
   if (!fullName) return fullName
   const nameParts = fullName.trim().split(/\s+/)
@@ -26,10 +25,8 @@ export const signup = async (req, res) => {
   try {
     let { fullName, name, email, password, role } = req.body
 
-    // Accept both 'fullName' and 'name' for flexibility
     fullName = fullName || name
 
-    // Validate required fields
     if (!fullName || !email || !password) {
       return res.status(400).json({ 
         success: false, 
@@ -37,7 +34,6 @@ export const signup = async (req, res) => {
       })
     }
 
-    // Clean duplicate names before saving
     fullName = cleanFullName(fullName)
 
     const existingUser = await User.findOne({ email }) || 
@@ -104,12 +100,10 @@ export const login = async (req, res) => {
   try {
     const { email, password, role } = req.body
 
-    // Check if user exists in any collection
     const userInUsers = await User.findOne({ email })
     const userInReviewers = await Reviewer.findOne({ email })
     const userInBusinesses = await Business.findOne({ email })
 
-    // Find which collection the user exists in
     let foundUser = null
     let actualRole = null
 
@@ -124,7 +118,6 @@ export const login = async (req, res) => {
       actualRole = 'Business'
     }
 
-    // If no user found at all
     if (!foundUser) {
       return res.status(401).json({ 
         success: false, 
@@ -132,7 +125,6 @@ export const login = async (req, res) => {
       })
     }
 
-    // Check if user is trying to login with wrong role
     if (actualRole !== role) {
       return res.status(401).json({ 
         success: false, 
@@ -140,7 +132,6 @@ export const login = async (req, res) => {
       })
     }
 
-    // Verify password
     const isPasswordValid = await foundUser.comparePassword(password)
     if (!isPasswordValid) {
       return res.status(401).json({ 
@@ -149,7 +140,6 @@ export const login = async (req, res) => {
       })
     }
 
-    // Generate token and return user data
     const token = generateToken(foundUser._id)
 
     res.status(200).json({

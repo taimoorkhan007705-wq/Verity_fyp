@@ -23,19 +23,78 @@ const Signup = () => {
 
   const handleChange = (e) => {
     setFormData({ ...formData, [e.target.name]: e.target.value })
+    setError('') // Clear error when user types
+  }
+
+  const validateName = (name) => {
+    // Check if name contains numbers
+    if (/\d/.test(name)) {
+      return 'Name cannot contain numbers'
+    }
+    // Check if name has at least 2 characters
+    if (name.trim().length < 2) {
+      return 'Name must be at least 2 characters'
+    }
+    // Check if name contains only letters and spaces
+    if (!/^[a-zA-Z\s]+$/.test(name)) {
+      return 'Name can only contain letters and spaces'
+    }
+    return null
+  }
+
+  const validateEmail = (email) => {
+    // Comprehensive email validation
+    const emailRegex = /^[a-zA-Z0-9._-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/
+    if (!emailRegex.test(email)) {
+      return 'Email is incorrect. Please enter a valid email (e.g., user@gmail.com)'
+    }
+    return null
+  }
+
+  const validatePassword = (password) => {
+    // Check minimum length
+    if (password.length < 8) {
+      return 'Password must be at least 8 characters long'
+    }
+    // Check for at least one uppercase letter
+    if (!/[A-Z]/.test(password)) {
+      return 'Password must contain at least one uppercase letter'
+    }
+    // Check for at least one number
+    if (!/\d/.test(password)) {
+      return 'Password must contain at least one number'
+    }
+    return null
   }
 
   const handleSubmit = async (e) => {
     e.preventDefault()
     setError('')
     
-    if (formData.password !== formData.confirmPassword) {
-      setError('Passwords do not match!')
+    // Validate name
+    const nameError = validateName(formData.fullName)
+    if (nameError) {
+      setError(nameError)
       return
     }
 
-    if (formData.password.length < 6) {
-      setError('Password must be at least 6 characters')
+    // Validate email
+    const emailError = validateEmail(formData.email)
+    if (emailError) {
+      setError(emailError)
+      return
+    }
+
+    // Validate password
+    const passwordError = validatePassword(formData.password)
+    if (passwordError) {
+      setError(passwordError)
+      return
+    }
+
+    // Check if passwords match
+    if (formData.password !== formData.confirmPassword) {
+      setError('Passwords do not match!')
       return
     }
 
@@ -133,11 +192,13 @@ const Signup = () => {
               <Input 
                 type="text" 
                 name="fullName" 
-                placeholder="Full Name" 
+                placeholder="Full Name (letters only)" 
                 value={formData.fullName} 
                 onChange={handleChange} 
                 required 
-                disabled={loading} 
+                disabled={loading}
+                pattern="[a-zA-Z\s]+"
+                title="Name can only contain letters and spaces"
               />
             </InputWrapper>
 
@@ -148,11 +209,13 @@ const Signup = () => {
               <Input 
                 type="email" 
                 name="email" 
-                placeholder="Email Address" 
+                placeholder="Email Address (e.g., user@gmail.com)" 
                 value={formData.email} 
                 onChange={handleChange} 
                 required 
-                disabled={loading} 
+                disabled={loading}
+                pattern="[a-zA-Z0-9._-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}"
+                title="Please enter a valid email address"
               />
             </InputWrapper>
 
@@ -163,12 +226,13 @@ const Signup = () => {
               <Input 
                 type={showPassword ? "text" : "password"}
                 name="password" 
-                placeholder="Password" 
+                placeholder="Password (min 8 chars, atleast 1 uppercase)" 
                 value={formData.password} 
                 onChange={handleChange} 
                 required 
-                minLength={6}
-                disabled={loading} 
+                minLength={8}
+                disabled={loading}
+                title="Password must be at least 8 characters with 1 uppercase letter and 1 number"
               />
               <PasswordToggle 
                 type="button" 
@@ -190,8 +254,9 @@ const Signup = () => {
                 value={formData.confirmPassword} 
                 onChange={handleChange} 
                 required 
-                minLength={6}
-                disabled={loading} 
+                minLength={8}
+                disabled={loading}
+                title="Re-enter your password"
               />
               <PasswordToggle 
                 type="button" 

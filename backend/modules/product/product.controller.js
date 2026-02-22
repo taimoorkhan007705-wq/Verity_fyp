@@ -1,14 +1,8 @@
 import Product from '../../models/Product.js'
 import Business from '../../models/Business.js'
 
-// Create Product (Business only)
 export const createProduct = async (req, res) => {
   try {
-    console.log('Create product request received')
-    console.log('User:', req.user)
-    console.log('Body:', req.body)
-    console.log('Files:', req.files)
-    
     const { name, description, price, category, tags, stock } = req.body
     const businessId = req.user.id
 
@@ -16,13 +10,10 @@ export const createProduct = async (req, res) => {
       return res.status(403).json({ success: false, message: 'Only businesses can create products' })
     }
 
-    // Process uploaded images
     const images = req.files ? req.files.map(file => ({
       url: `/uploads/users/${businessId}/products/${file.filename}`,
       thumbnail: `/uploads/users/${businessId}/products/${file.filename}`
     })) : []
-
-    console.log('Creating product with data:', { name, description, price, category, stock, images })
 
     const product = await Product.create({
       business: businessId,
@@ -38,20 +29,16 @@ export const createProduct = async (req, res) => {
 
     await product.populate('business', 'user_info.fullName profile_info.avatar business_details.businessType')
 
-    console.log('Product created successfully:', product._id)
-
     res.status(201).json({
       success: true,
       message: 'Product created successfully',
       product
     })
   } catch (error) {
-    console.error('Create product error:', error)
     res.status(500).json({ success: false, message: 'Failed to create product', error: error.message })
   }
 }
 
-// Get All Products (Shopping Page)
 export const getAllProducts = async (req, res) => {
   try {
     const { page = 1, limit = 12, category, search } = req.query
@@ -90,7 +77,6 @@ export const getAllProducts = async (req, res) => {
   }
 }
 
-// Get Product by ID
 export const getProductById = async (req, res) => {
   try {
     const product = await Product.findById(req.params.id)
@@ -100,7 +86,6 @@ export const getProductById = async (req, res) => {
       return res.status(404).json({ success: false, message: 'Product not found' })
     }
 
-    // Track view
     const userId = req.user?.id
     const userRole = req.user?.role
 
@@ -120,7 +105,6 @@ export const getProductById = async (req, res) => {
   }
 }
 
-// Get Business Products (for Business Dashboard)
 export const getBusinessProducts = async (req, res) => {
   try {
     const businessId = req.user.id
@@ -136,7 +120,6 @@ export const getBusinessProducts = async (req, res) => {
         select: 'user_info.fullName profile_info.avatar email'
       })
 
-    // Calculate total analytics
     const totalViews = products.reduce((sum, p) => sum + p.views, 0)
     const totalInquiries = products.reduce((sum, p) => sum + p.inquiriesCount, 0)
     const totalLikes = products.reduce((sum, p) => sum + p.likesCount, 0)
@@ -157,7 +140,6 @@ export const getBusinessProducts = async (req, res) => {
   }
 }
 
-// Update Product
 export const updateProduct = async (req, res) => {
   try {
     const { name, description, price, category, tags, stock, isActive } = req.body
@@ -171,7 +153,6 @@ export const updateProduct = async (req, res) => {
       return res.status(403).json({ success: false, message: 'Not authorized' })
     }
 
-    // Update fields
     if (name) product.name = name
     if (description) product.description = description
     if (price) product.price = price
@@ -183,7 +164,6 @@ export const updateProduct = async (req, res) => {
     }
     if (isActive !== undefined) product.isActive = isActive
 
-    // Handle new images
     if (req.files && req.files.length > 0) {
       const newImages = req.files.map(file => ({
         url: `/uploads/users/${req.user.id}/products/${file.filename}`,
@@ -204,7 +184,6 @@ export const updateProduct = async (req, res) => {
   }
 }
 
-// Delete Product
 export const deleteProduct = async (req, res) => {
   try {
     const product = await Product.findById(req.params.id)
@@ -225,7 +204,6 @@ export const deleteProduct = async (req, res) => {
   }
 }
 
-// Send Inquiry
 export const sendInquiry = async (req, res) => {
   try {
     const { message } = req.body
@@ -250,7 +228,6 @@ export const sendInquiry = async (req, res) => {
   }
 }
 
-// Like Product
 export const likeProduct = async (req, res) => {
   try {
     const product = await Product.findById(req.params.id)
