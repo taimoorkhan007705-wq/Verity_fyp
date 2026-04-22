@@ -1,6 +1,8 @@
 import User from '../../models/User.js'
 import Reviewer from '../../models/Reviewer.js'
 import Business from '../../models/Business.js'
+import Connection from '../../models/Connection.js'
+import Message from '../../models/Message.js'
 import fs from 'fs'
 import path from 'path'
 const getModelByRole = (role) => {
@@ -182,5 +184,245 @@ export const deleteUser = async (req, res) => {
       message: 'Failed to delete account', 
       error: error.message 
     })
+  }
+}
+
+const formatUser = (user, role) => ({
+  id: user._id,
+  fullName: user.user_info?.fullName || '',
+  email: user.email,
+  avatar: user.profile_info?.avatar || null,
+  bio: user.profile_info?.bio || '',
+  role: user.role || role,
+  trustScore: user.trust_security?.trustScore || 50,
+  isVerified: user.trust_security?.isVerified || false
+})
+
+export const getAllUsers = async (req, res) => {
+  try {
+    const currentUserId = req.user._id.toString()
+    const [users, reviewers, businesses] = await Promise.all([
+      User.find({ _id: { $ne: currentUserId } }).select('-password'),
+      Reviewer.find({ _id: { $ne: currentUserId } }).select('-password'),
+      Business.find({ _id: { $ne: currentUserId } }).select('-password')
+    ])
+    const all = [
+      ...users.map(u => formatUser(u, 'User')),
+      ...reviewers.map(u => formatUser(u, 'Reviewer')),
+      ...businesses.map(u => formatUser(u, 'Business'))
+    ]
+    const connections = await Connection.find({
+      $or: [{ follower: currentUserId }, { following: currentUserId }]
+    })
+    const statusMap = {}
+    connections.forEach(c => {
+      const otherId = c.follower.toString() === currentUserId ? c.following.toString() : c.follower.toString()
+      if (c.status === 'active') statusMap[otherId] = 'active'
+      else if (c.status === 'pending') {
+        // I sent the request
+        if (c.follower.toString() === currentUserId) statusMap[otherId] = 'pending_sent'
+        // they sent me a request
+        else statusMap[otherId] = 'pending_received'
+      }
+    })
+    const result = all.map(u => ({ ...u, connectionStatus: statusMap[u.id.toString()] || 'none' }))
+    res.json({ success: true, users: result })
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message })
+  }
+}
+
+export const sendConnectionRequest = async (req, res) => {
+  try {
+    const followerId = req.user._id.toString()
+    const followerRole = req.user.role
+    const { targetUserId } = req.params
+
+    if (followerId === targetUserId) {
+      return res.status(400).json({ success: false, message: 'Cannot connect with yourself' })
+    }
+
+    const existing = await Connection.findOne({ follower: followerId, following: targetUserId })
+    if (existing) {
+      await existing.deleteOne()
+      return res.json({ success: true, status: 'none', message: 'Request cancelled' })
+    }
+
+    await Connection.create({
+      follower: followerId,
+      followerModel: followerRole,
+      following: targetUserId,
+      followingModel: 'User',
+      status: 'pending'
+    })
+    res.json({ success: true, status: 'pending', message: 'Friend request sent' })
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message })
+  }
+}
+
+export const acceptRequest = async (req, res) => {
+  try {
+    const userId = req.user._id.toString()
+    const userRole = req.user.role
+    const { requesterId } = req.params
+    const conn = await Connection.findOne({ follower: requesterId, following: userId, status: 'pending' })
+    if (!conn) return res.status(404).json({ success: false, message: 'Request not found' })
+    conn.status = 'active'
+    await conn.save()
+
+    // update follower/following counts
+    const followerModel = getModelByRole(conn.followerModel)
+    const followingModel = getModelByRole(userRole)
+    await followerModel.findByIdAndUpdate(requesterId, { $inc: { 'social_stats.followingCount': 1 } })
+    await followingModel.findByIdAndUpdate(userId, { $inc: { 'social_stats.followersCount': 1 } })
+
+    res.json({ success: true, message: 'Connection accepted' })
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message })
+  }
+}
+
+export const rejectRequest = async (req, res) => {
+  try {
+    const userId = req.user._id.toString()
+    const { requesterId } = req.params
+    await Connection.findOneAndDelete({ follower: requesterId, following: userId, status: 'pending' })
+    res.json({ success: true, message: 'Request rejected' })
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message })
+  }
+}
+
+export const getPendingRequests = async (req, res) => {
+  try {
+    const userId = req.user._id.toString()
+    const pending = await Connection.find({ following: userId, status: 'pending' })
+    const requesterIds = pending.map(c => c.follower.toString())
+
+    const [users, reviewers, businesses] = await Promise.all([
+      User.find({ _id: { $in: requesterIds } }).select('-password'),
+      Reviewer.find({ _id: { $in: requesterIds } }).select('-password'),
+      Business.find({ _id: { $in: requesterIds } }).select('-password')
+    ])
+    const allUsers = [
+      ...users.map(u => formatUser(u, 'User')),
+      ...reviewers.map(u => formatUser(u, 'Reviewer')),
+      ...businesses.map(u => formatUser(u, 'Business'))
+    ]
+    res.json({ success: true, requests: allUsers })
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message })
+  }
+}
+
+export const getConnections = async (req, res) => {
+  try {
+    const userId = req.user._id.toString()
+    const connections = await Connection.find({
+      $or: [{ follower: userId }, { following: userId }],
+      status: 'active'
+    })
+
+    const otherIds = connections.map(c =>
+      c.follower.toString() === userId ? c.following.toString() : c.follower.toString()
+    )
+
+    const [users, reviewers, businesses] = await Promise.all([
+      User.find({ _id: { $in: otherIds } }).select('-password'),
+      Reviewer.find({ _id: { $in: otherIds } }).select('-password'),
+      Business.find({ _id: { $in: otherIds } }).select('-password')
+    ])
+
+    const all = [
+      ...users.map(u => formatUser(u, 'User')),
+      ...reviewers.map(u => formatUser(u, 'Reviewer')),
+      ...businesses.map(u => formatUser(u, 'Business'))
+    ]
+    res.json({ success: true, connections: all })
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message })
+  }
+}
+
+export const getMessages = async (req, res) => {
+  try {
+    const userId = req.user._id.toString()
+    const { otherId } = req.params
+    const conversationId = [userId, otherId].sort().join('_')
+    const messages = await Message.find({ conversationId, isDeleted: false })
+      .sort({ createdAt: 1 })
+    await Message.updateMany(
+      { conversationId, receiver: userId, isRead: false },
+      { isRead: true, readAt: new Date() }
+    )
+    res.json({ success: true, messages })
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message })
+  }
+}
+
+export const sendMessage = async (req, res) => {
+  try {
+    const senderId = req.user._id.toString()
+    const senderRole = req.user.role
+    const { otherId } = req.params
+    const { message } = req.body
+    if (!message?.trim()) return res.status(400).json({ success: false, message: 'Message is empty' })
+    const conversationId = [senderId, otherId].sort().join('_')
+    const msg = await Message.create({
+      conversationId,
+      sender: senderId,
+      senderModel: senderRole,
+      receiver: otherId,
+      receiverModel: 'User',
+      message: message.trim()
+    })
+    res.json({ success: true, message: msg })
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message })
+  }
+}
+
+export const getConversations = async (req, res) => {
+  try {
+    const userId = req.user._id.toString()
+    const mongoose = (await import('mongoose')).default
+    const messages = await Message.aggregate([
+      {
+        $match: {
+          $or: [
+            { sender: new mongoose.Types.ObjectId(userId) },
+            { receiver: new mongoose.Types.ObjectId(userId) }
+          ],
+          isDeleted: false
+        }
+      },
+      { $sort: { createdAt: -1 } },
+      { $group: { _id: '$conversationId', lastMessage: { $first: '$$ROOT' } } }
+    ])
+
+    const otherIds = messages.map(m => m._id.split('_').find(p => p !== userId))
+
+    const [users, reviewers, businesses] = await Promise.all([
+      User.find({ _id: { $in: otherIds } }).select('-password'),
+      Reviewer.find({ _id: { $in: otherIds } }).select('-password'),
+      Business.find({ _id: { $in: otherIds } }).select('-password')
+    ])
+    const allUsers = [
+      ...users.map(u => formatUser(u, 'User')),
+      ...reviewers.map(u => formatUser(u, 'Reviewer')),
+      ...businesses.map(u => formatUser(u, 'Business'))
+    ]
+
+    const conversations = messages.map(m => {
+      const otherId = m._id.split('_').find(p => p !== userId)
+      const other = allUsers.find(u => u.id.toString() === otherId)
+      return { conversationId: m._id, other, lastMessage: m.lastMessage }
+    }).filter(c => c.other)
+
+    res.json({ success: true, conversations })
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message })
   }
 }

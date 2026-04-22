@@ -22,8 +22,8 @@ const connectionSchema = new mongoose.Schema({
   },
   status: {
     type: String,
-    enum: ['active', 'blocked', 'muted'],
-    default: 'active'
+    enum: ['pending', 'active', 'blocked', 'muted'],
+    default: 'pending'
   },
   notificationsEnabled: {
     type: Boolean,

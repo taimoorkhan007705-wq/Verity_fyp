@@ -35,7 +35,21 @@ function Profile() {
   const [loading, setLoading] = useState(true)
   useEffect(() => {
     loadProfile()
+    loadPosts()
   }, [])
+
+  const loadPosts = async () => {
+    try {
+      const token = localStorage.getItem('token')
+      const res = await fetch('http://localhost:5000/api/posts/my', {
+        headers: { Authorization: `Bearer ${token}` }
+      })
+      const data = await res.json()
+      if (data.success) setPosts(data.posts)
+    } catch (error) {
+      console.error('Failed to load posts:', error)
+    }
+  }
   const loadProfile = async () => {
     try {
       const response = await getProfile()
@@ -155,7 +169,13 @@ function Profile() {
           ) : (
             posts.map((post) => (
               <PostItem key={post._id}>
-                <PostImage src={post.media[0]?.url} alt="Post" />
+                {post.media?.[0] ? (
+                  <PostImage src={`http://localhost:5000${post.media[0].url}`} alt="Post" />
+                ) : (
+                  <div style={{ width: '100%', height: '100%', backgroundColor: '#f1f5f9', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '0.5rem', boxSizing: 'border-box' }}>
+                    <span style={{ fontSize: '0.75rem', color: '#64748b', textAlign: 'center', overflow: 'hidden', display: '-webkit-box', WebkitLineClamp: 3, WebkitBoxOrient: 'vertical' }}>{post.content}</span>
+                  </div>
+                )}
               </PostItem>
             ))
           )}

@@ -92,7 +92,7 @@ export const login = async (req, res) => {
     let actualRole = null
     if (userInUsers) {
       foundUser = userInUsers
-      actualRole = 'User'
+      actualRole = userInUsers.role // could be 'User' or 'Admin'
     } else if (userInReviewers) {
       foundUser = userInReviewers
       actualRole = 'Reviewer'
@@ -106,7 +106,8 @@ export const login = async (req, res) => {
         message: 'No account found with this email address' 
       })
     }
-    if (actualRole !== role) {
+    // Admin can log in regardless of role selector
+    if (actualRole !== role && actualRole !== 'Admin') {
       return res.status(401).json({ 
         success: false, 
         message: `This email is registered as a ${actualRole} account. Please select ${actualRole} to login.` 

@@ -2,32 +2,74 @@ import Post from '../../models/Post.js'
 import User from '../../models/User.js'
 import Reviewer from '../../models/Reviewer.js'
 import Business from '../../models/Business.js'
+import path from 'path'
+import { checkMediaWithAI } from '../../services/aiDetection.js'
+
 const getModelByRole = (role) => {
   const models = { Reviewer, Business, User }
   return models[role] || User
 }
+
 export const createPost = async (req, res) => {
   try {
     const { content, hashtags, visibility } = req.body
     const userId = req.user.id
     const userRole = req.user.role
+
     const media = req.files ? req.files.map(file => ({
       type: file.mimetype.startsWith('image/') ? 'image' : 'video',
-      url: `/uploads/users/${userId}/posts/${file.filename}`
+      url: `/uploads/users/${userId}/posts/${file.filename}`,
+      _localPath: file.path,
+      _mimeType: file.mimetype
     })) : []
+
+    // run AI detection on each media file
+    let verificationStatus = 'approved' // default for text-only posts
+    let aiRejectionReason = null
+
+    if (media.length > 0) {
+      verificationStatus = 'approved' // optimistic — downgrade if any file fails
+      for (const item of media) {
+        const result = await checkMediaWithAI(item._localPath, item._mimeType)
+        console.log(`AI check [${item._mimeType}]: score=${result.score} verdict=${result.verdict} reason=${result.reason}`)
+
+        if (result.verdict === 'rejected') {
+          verificationStatus = 'rejected'
+          aiRejectionReason = result.reason
+          break
+        } else if (result.verdict === 'pending') {
+          verificationStatus = 'pending' // uncertain — send to reviewer
+        }
+        // if approved, keep current status (don't downgrade from pending)
+      }
+    }
+
+    // strip internal fields before saving
+    const cleanMedia = media.map(({ _localPath, _mimeType, ...rest }) => rest)
+
     const post = await Post.create({
       author: userId,
       authorModel: userRole,
       content,
-      media,
+      media: cleanMedia,
       hashtags: hashtags ? JSON.parse(hashtags) : [],
       visibility: visibility || 'public',
-      verificationStatus: 'pending' // All posts start as pending
+      verificationStatus,
+      reviewNotes: aiRejectionReason || undefined
     })
+
     await post.populate('author', 'user_info.fullName email profile_info.avatar role')
+
+    const messages = {
+      approved: 'Post published successfully!',
+      pending: 'Post submitted for human review — our reviewers will verify it shortly.',
+      rejected: `Post rejected: ${aiRejectionReason}`
+    }
+
     res.status(201).json({
       success: true,
-      message: 'Post submitted for review',
+      message: messages[verificationStatus],
+      verificationStatus,
       post
     })
   } catch (error) {
@@ -124,5 +166,46 @@ export const deletePost = async (req, res) => {
     res.json({ success: true, message: 'Post deleted successfully' })
   } catch (error) {
     res.status(500).json({ success: false, message: 'Failed to delete post', error: error.message })
+  }
+}
+
+export const sharePost = async (req, res) => {
+  try {
+    const post = await Post.findById(req.params.id)
+    if (!post) return res.status(404).json({ success: false, message: 'Post not found' })
+    const userId = req.user.id
+    const userRole = req.user.role
+    const alreadyShared = post.shares.find(s => s.user.toString() === userId)
+    if (!alreadyShared) {
+      post.shares.push({ user: userId, userModel: userRole })
+      post.sharesCount = post.shares.length
+      await post.save()
+    }
+    res.json({ success: true, shares: post.shares.length })
+  } catch (error) {
+    res.status(500).json({ success: false, message: 'Failed to share post', error: error.message })
+  }
+}
+
+export const getUserPosts = async (req, res) => {
+  try {
+    const userId = req.params.userId || req.user.id
+    const posts = await Post.find({ author: userId, isDeleted: false, verificationStatus: 'approved' })
+      .sort({ createdAt: -1 })
+      .populate('author', 'user_info.fullName email profile_info.avatar role')
+    res.json({ success: true, posts })
+  } catch (error) {
+    res.status(500).json({ success: false, message: 'Failed to fetch posts', error: error.message })
+  }
+}
+
+export const getMyRejectedPosts = async (req, res) => {
+  try {
+    const userId = req.user.id
+    const posts = await Post.find({ author: userId, isDeleted: false, verificationStatus: 'rejected' })
+      .sort({ createdAt: -1 })
+    res.json({ success: true, posts })
+  } catch (error) {
+    res.status(500).json({ success: false, message: 'Failed to fetch rejected posts', error: error.message })
   }
 }

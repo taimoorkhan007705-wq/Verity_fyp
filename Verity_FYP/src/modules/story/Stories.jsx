@@ -2,7 +2,8 @@ import { useState, useEffect } from 'react'
 import { Plus, X } from 'lucide-react'
 import { useNavigate } from 'react-router-dom'
 import { getStories, createStory } from '../../services/api'
-import { hasCompletedProfile, promptProfileCompletion } from '../../utils/profileCheck'
+import { hasCompletedProfile } from '../../utils/profileCheck'
+import CompleteProfileModal from '../shared/CompleteProfileModal'
 import StoryViewer from './StoryViewer'
 import {
   StoriesContainer,
@@ -30,6 +31,7 @@ const Stories = () => {
   const [stories, setStories] = useState([])
   const [loading, setLoading] = useState(true)
   const [showCreateModal, setShowCreateModal] = useState(false)
+  const [showProfileModal, setShowProfileModal] = useState(false)
   const [selectedFile, setSelectedFile] = useState(null)
   const [preview, setPreview] = useState(null)
   const [caption, setCaption] = useState('')
@@ -148,7 +150,7 @@ const Stories = () => {
                       onClick={(e) => {
                         e.stopPropagation()
                         if (!hasCompletedProfile(currentUser)) {
-                          promptProfileCompletion(navigate)
+                          setShowProfileModal(true)
                         } else {
                           setShowCreateModal(true)
                         }
@@ -263,6 +265,7 @@ const Stories = () => {
           onClose={handleCloseViewer}
         />
       )}
+      {showProfileModal && <CompleteProfileModal onClose={() => setShowProfileModal(false)} />}
     </>
   )
 }

@@ -5,7 +5,7 @@ export const getPendingReviews = async (req, res) => {
     const reviewerId = req.user.id
     const posts = await Post.find({ 
       verificationStatus: 'pending',
-      author: { $ne: reviewerId } // Exclude reviewer's own posts
+      author: { $ne: reviewerId } 
     })
       .populate('author', 'user_info.fullName email profile_info.avatar role')
       .sort({ createdAt: -1 })

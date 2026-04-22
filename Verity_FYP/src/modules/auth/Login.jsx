@@ -17,7 +17,7 @@ const Login = () => {
   const [error, setError] = useState('')
   const [showPassword, setShowPassword] = useState(false)
   const [rememberMe, setRememberMe] = useState(false)
-  const roles = ['User', 'Reviewer', 'Business']
+  const roles = ['User', 'Reviewer', 'Business', 'Admin']
   const handleChange = (e) => {
     setFormData({ ...formData, [e.target.name]: e.target.value })
   }
@@ -29,7 +29,9 @@ const Login = () => {
       const response = await login(formData)
       console.log('Login response:', response)
       alert(`Welcome back, ${response.user.fullName}!`)
-      if (response.user.role === 'Business') {
+      if (response.user.role === 'Admin') {
+        window.location.href = '/admin'
+      } else if (response.user.role === 'Business') {
         window.location.href = '/dashboard'
       } else if (response.user.role === 'Reviewer') {
         window.location.href = '/review-center'

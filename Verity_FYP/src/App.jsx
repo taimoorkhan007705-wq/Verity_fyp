@@ -11,15 +11,16 @@ import EditProfile from './modules/profile/EditProfile'
 import Shopping from './modules/shopping/Shopping'
 import Layout from './modules/shared/Layout'
 import { isAuthenticated, getCurrentUser, logout } from './services/api'
-const Messages = () => <div>Messages (Coming Soon)</div>
-const Connections = () => <div>Connections (Coming Soon)</div>
-const ChatBox = () => <div>ChatBox (Coming Soon)</div>
-const Discover = () => <div>Discover (Coming Soon)</div>
+import Discover from './modules/discover/Discover'
+import Connections from './modules/connections/Connections'
+import Messages from './modules/messages/Messages'
+import AdminDashboard from './modules/admin/AdminDashboard'
+import RejectedPosts from './modules/post/RejectedPosts'
 function App() {
   const [user, setUser] = useState(null)
   const [loading, setLoading] = useState(true)
   useEffect(() => {
-    const APP_VERSION = '1.2.0' // Increment this to force cache clear
+    const APP_VERSION = '1.2.0'
     const storedVersion = localStorage.getItem('appVersion')
     if (storedVersion !== APP_VERSION) {
       console.log('Clearing cache due to version update...')
@@ -33,7 +34,7 @@ function App() {
       if (isAuthenticated()) {
         try {
           const token = localStorage.getItem('token')
-          const response = await fetch('http://localhost:5000/api/user/profile', {
+          const response = await fetch('http://localhost:5000/api/users/profiles', {
             headers: {
               'Authorization': `Bearer ${token}`
             }
@@ -71,6 +72,28 @@ function App() {
       </Routes>
     )
   }
+  if (user.role === 'Admin') {
+    return (
+      <Routes>
+        <Route path="/" element={<Layout onLogout={handleLogout} />}>
+          <Route index element={<Feed />} />
+          <Route path="feed" element={<Feed />} />
+          <Route path="shopping" element={<Shopping />} />
+          <Route path="create-post" element={<CreatePost />} />
+          <Route path="connections" element={<Connections />} />
+          <Route path="discover" element={<Discover />} />
+          <Route path="profile" element={<Profile />} />
+          <Route path="profile/edit" element={<EditProfile />} />
+          <Route path="messages" element={<Messages />} />
+          <Route path="messages/:userId" element={<Messages />} />
+          <Route path="admin" element={<AdminDashboard />} />
+          <Route path="rejected-posts" element={<RejectedPosts />} />
+        </Route>
+        <Route path="*" element={<Navigate to="/feed" replace />} />
+      </Routes>
+    )
+  }
+
   if (user.role === 'Business') {
     return (
       <Routes>
@@ -93,9 +116,9 @@ function App() {
           <Route path="discover" element={<Discover />} />
           <Route path="profile" element={<Profile />} />
           <Route path="profile/edit" element={<EditProfile />} />
-          <Route path="messages" element={<Messages />}>
-            <Route path=":userId" element={<ChatBox />} />
-          </Route>
+          <Route path="messages" element={<Messages />} />
+          <Route path="messages/:userId" element={<Messages />} />
+          <Route path="rejected-posts" element={<RejectedPosts />} />
         </Route>
         <Route path="*" element={<Navigate to="/review-center" replace />} />
       </Routes>
@@ -112,9 +135,9 @@ function App() {
         <Route path="discover" element={<Discover />} />
         <Route path="profile" element={<Profile />} />
         <Route path="profile/edit" element={<EditProfile />} />
-        <Route path="messages" element={<Messages />}>
-          <Route path=":userId" element={<ChatBox />} />
-        </Route>
+        <Route path="messages" element={<Messages />} />
+        <Route path="messages/:userId" element={<Messages />} />
+        <Route path="rejected-posts" element={<RejectedPosts />} />
       </Route>
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>

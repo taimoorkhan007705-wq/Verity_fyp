@@ -3,7 +3,8 @@ import { useNavigate } from 'react-router-dom'
 import { Image, Video, Smile, MapPin, X, Camera, Globe } from 'lucide-react'
 import EmojiPicker from 'emoji-picker-react'
 import { getCurrentUser, createPost } from '../../services/api'
-import { hasCompletedProfile, promptProfileCompletion } from '../../utils/profileCheck'
+import { hasCompletedProfile } from '../../utils/profileCheck'
+import CompleteProfileModal from '../shared/CompleteProfileModal'
 import {
   CreatePostContainer,
   PostCard,
@@ -46,10 +47,11 @@ function CreatePost() {
   const textAreaRef = useRef(null)
   useEffect(() => {
     if (!hasCompletedProfile(user)) {
-      promptProfileCompletion(navigate)
+      setShowProfileModal(true)
     }
   }, [user, navigate])
   const [postText, setPostText] = useState('')
+  const [showProfileModal, setShowProfileModal] = useState(false)
   const [mediaFiles, setMediaFiles] = useState([])
   const [isDragging, setIsDragging] = useState(false)
   const [hashtags, setHashtags] = useState([])
@@ -149,7 +151,7 @@ function CreatePost() {
         formData.append('media', media.file)
       })
       const response = await createPost(formData)
-      alert('Post submitted for review! It will appear in the feed once approved by reviewers.')
+      alert(response.message || 'Post submitted!')
       navigate('/feed')
     } catch (error) {
       alert(`Failed to create post: ${error.message}`)
@@ -167,6 +169,7 @@ function CreatePost() {
   const isOverLimit = postText.length > MAX_CHARS
   const canSubmit = (postText.trim() || mediaFiles.length > 0) && !isOverLimit
   return (
+    <>
     <CreatePostContainer>
       <PostCard>
         {}
@@ -196,7 +199,7 @@ function CreatePost() {
         <CharacterCount $isOverLimit={isOverLimit}>
           {postText.length}/{MAX_CHARS}
         </CharacterCount>
-        {}
+
         {mediaFiles.length === 0 && (
           <MediaUploadSection>
             <UploadArea
@@ -216,7 +219,13 @@ function CreatePost() {
             <HiddenFileInput
               ref={fileInputRef}
               type="file"
-              accept="image}
+              accept="image/*,video/*"
+              multiple
+              onChange={handleFileSelect}
+            />
+          </MediaUploadSection>
+        )}
+
         {mediaFiles.length > 0 && (
           <MediaPreviewGrid>
             {mediaFiles.map((media, index) => (
@@ -233,7 +242,7 @@ function CreatePost() {
             ))}
           </MediaPreviewGrid>
         )}
-        {}
+
         <ActionButtonsRow>
           <ActionButton onClick={() => fileInputRef.current?.click()}>
             <Image />
@@ -265,7 +274,9 @@ function CreatePost() {
         <HiddenFileInput
           ref={videoInputRef}
           type="file"
-          accept="video}
+          accept="video/*"
+          onChange={handleFileSelect}
+        />
         {hashtags.length > 0 && (
           <HashtagSection>
             <SectionLabel>Hashtags</SectionLabel>
@@ -330,6 +341,8 @@ function CreatePost() {
         </PreviewSection>
       )}
     </CreatePostContainer>
+    {showProfileModal && <CompleteProfileModal onClose={() => setShowProfileModal(false)} />}
+    </>
   )
 }
 export default CreatePost

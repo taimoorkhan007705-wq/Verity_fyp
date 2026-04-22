@@ -57,7 +57,7 @@ export const login = async (credentials) => {
 export const getUserProfile = async () => {
   try {
     const token = localStorage.getItem('token');
-    const response = await fetch(`${API_URL}/user/profile`, {
+    const response = await fetch(`${API_URL}/users/profiles`, {
       method: 'GET',
       headers: {
         'Content-Type': 'application/json',
@@ -218,7 +218,7 @@ export const getReviewerStats = async () => {
 export const getProfile = async () => {
   try {
     const token = localStorage.getItem('token');
-    const response = await fetch(`${API_URL}/user/profile`, {
+    const response = await fetch(`${API_URL}/users/profiles`, {
       method: 'GET',
       headers: {
         'Content-Type': 'application/json',
@@ -237,7 +237,7 @@ export const getProfile = async () => {
 export const updateProfile = async (formData) => {
   try {
     const token = localStorage.getItem('token');
-    const response = await fetch(`${API_URL}/user/profile`, {
+    const response = await fetch(`${API_URL}/users/profiles`, {
       method: 'PUT',
       headers: {
         'Authorization': `Bearer ${token}`,

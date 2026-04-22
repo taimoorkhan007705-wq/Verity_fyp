@@ -12,7 +12,9 @@ import {
   LogOut,
   ClipboardCheck,
   BarChart3,
-  ShoppingBag
+  ShoppingBag,
+  Shield,
+  XCircle
 } from 'lucide-react'
 import { getCurrentUser, logout as apiLogout } from '../../services/api'
 import {
@@ -77,8 +79,10 @@ function Sidebar({ isOpen, setsidebarOpen }) {
   const isProfileActive = location.pathname.startsWith('/profile')
   const isReviewCenterActive = location.pathname === '/review-center'
   const isShoppingActive = location.pathname.startsWith('/shopping')
+  const isRejectedActive = location.pathname === '/rejected-posts'
   const isReviewer = user?.role === 'Reviewer'
   const isBusiness = user?.role === 'Business'
+  const isAdmin = user?.role === 'Admin'
   return (
     <SidebarContainer $isOpen={isOpen}>
       {}
@@ -125,8 +129,33 @@ function Sidebar({ isOpen, setsidebarOpen }) {
               </Profile_Button>
             </>
           )}
+          {isAdmin && (
+            <>
+              <Feed_Button to="/feed" $isActive={isFeedActive} $isOpen={isOpen}>
+                <Home /><span>Feed</span>
+              </Feed_Button>
+              <Discover_Button to="/discover" $isActive={isDiscoverActive} $isOpen={isOpen}>
+                <Compass /><span>Discover</span>
+              </Discover_Button>
+              <Connections_Button to="/connections" $isActive={isConnectionsActive} $isOpen={isOpen}>
+                <Users /><span>Connections</span>
+              </Connections_Button>
+              <Messages_Button to="/messages" $isActive={isMessagesActive} $isOpen={isOpen}>
+                <MessageCircle /><span>Messages</span>
+              </Messages_Button>
+              <CreatePost_Button to="/create-post" $isActive={isCreatePostActive} $isOpen={isOpen}>
+                <PlusSquare /><span>Create Post</span>
+              </CreatePost_Button>
+              <Profile_Button to="/rejected-posts" $isActive={isRejectedActive} $isOpen={isOpen}>
+                <XCircle /><span>Rejected Posts</span>
+              </Profile_Button>
+              <Profile_Button to="/profile" $isActive={isProfileActive} $isOpen={isOpen}>
+                <User /><span>Profile</span>
+              </Profile_Button>
+            </>
+          )}
           {}
-          {!isReviewer && !isBusiness && (
+          {!isReviewer && !isBusiness && !isAdmin && (
             <>
               <Feed_Button to="/feed" $isActive={isFeedActive} $isOpen={isOpen}>
                 <Home />
@@ -152,6 +181,10 @@ function Sidebar({ isOpen, setsidebarOpen }) {
                 <PlusSquare />
                 <span>Create Post</span>
               </CreatePost_Button>
+              <Profile_Button to="/rejected-posts" $isActive={isRejectedActive} $isOpen={isOpen}>
+                <XCircle />
+                <span>Rejected Posts</span>
+              </Profile_Button>
               <Profile_Button to="/profile" $isActive={isProfileActive} $isOpen={isOpen}>
                 <User />
                 <span>Profile</span>

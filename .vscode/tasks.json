@@ -1,0 +1,19 @@
+{
+	"version": "2.0.0",
+	"tasks": [
+		{
+			"label": "Run Backend",
+			"type": "shell",
+			"command": "cd backend && npm run dev",
+			"isBackground": true,
+			"problemMatcher": []
+		},
+		{
+			"label": "Run Frontend",
+			"type": "shell",
+			"command": "cd Verity_FYP && npm run dev",
+			"isBackground": true,
+			"problemMatcher": []
+		}
+	]
+}
