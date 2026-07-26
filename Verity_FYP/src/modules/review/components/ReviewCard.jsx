@@ -31,12 +31,12 @@ function ReviewCard({ post, onApprove, onReject }) {
       </ReviewCardHeader>
       {}
       <PostContent>
-        <PostText>{post.text}</PostText>
+        <PostText>{post.text || 'No post text available'}</PostText>
         {console.log('Post ID:', post.id, 'Image URL:', post.image)}
         {post.image ? (
           <PostImage 
             src={post.image} 
-            alt="Post content" 
+            alt={post.text || 'Post content'} 
             onError={(e) => console.error('Image failed to load:', post.image, e)} 
           />
         ) : (
@@ -94,3 +94,4 @@ function ReviewCard({ post, onApprove, onReject }) {
   )
 }
 export default ReviewCard
+

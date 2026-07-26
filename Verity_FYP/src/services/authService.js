@@ -1,4 +1,4 @@
-const API_URL = 'http://localhost:5000/api'
+import { API_BASE, API_URL } from '../config.js'
 export const signup = async (userData) => {
   try {
     const response = await fetch(`${API_URL}/auth/signup`, {

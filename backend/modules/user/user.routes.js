@@ -1,5 +1,5 @@
 import express from 'express'
-import { getProfile, updateProfile, getUserById, deleteUser, getAllUsers, sendConnectionRequest, acceptRequest, rejectRequest, getPendingRequests, getConnections, getMessages, sendMessage, getConversations } from './user.controller.js'
+import { getProfile, updateProfile, getUserById, deleteUser, getAllUsers, sendConnectionRequest, acceptRequest, rejectRequest, getPendingRequests, getConnections, getMessages, sendMessage, getConversations, getBadgeCounts, markRejectionsRead, getRecentNotifications, markNotificationsRead } from './user.controller.js'
 import { protect } from '../../middleware/auth.js'
 import { uploadProfile } from '../../middleware/upload.js'
 const router = express.Router()
@@ -24,4 +24,12 @@ router.get('/conversations', protect, getConversations)
 router.get('/messages/:otherId', protect, getMessages)
 router.post('/messages/:otherId', protect, sendMessage)
 
+// Badges & notifications
+router.get('/badges', protect, getBadgeCounts)
+router.post('/badges/rejections/read', protect, markRejectionsRead)
+router.get('/notifications', protect, getRecentNotifications)
+router.post('/notifications/read', protect, markNotificationsRead)
+
 export default router
+
+

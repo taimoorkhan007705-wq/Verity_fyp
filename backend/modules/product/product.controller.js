@@ -207,3 +207,5 @@ export const likeProduct = async (req, res) => {
     res.status(500).json({ success: false, message: 'Failed to like product', error: error.message })
   }
 }
+
+

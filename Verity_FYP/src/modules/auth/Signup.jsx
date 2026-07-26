@@ -77,7 +77,7 @@ const Signup = () => {
     }
     setLoading(true)
     try {
-      const { confirmPassword, ...userData } = formData
+      const { confirmPassword: _confirmPassword, ...userData } = formData
       console.log('Signing up with role:', userData.role)
       const response = await signup(userData)
       console.log('Signup response:', response)
@@ -244,3 +244,4 @@ const Signup = () => {
   )
 }
 export default Signup
+

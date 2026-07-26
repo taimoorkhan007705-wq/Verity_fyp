@@ -1,3 +1,4 @@
+import { API_BASE, API_URL } from '../../config.js'
 import { useState, useRef, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { Image, Video, Smile, MapPin, X, Camera, Globe } from 'lucide-react'
@@ -5,6 +6,9 @@ import EmojiPicker from 'emoji-picker-react'
 import { getCurrentUser, createPost } from '../../services/api'
 import { hasCompletedProfile } from '../../utils/profileCheck'
 import CompleteProfileModal from '../shared/CompleteProfileModal'
+import ImageCropper from '../../components/ImageCropper/ImageCropper'
+import { useToast } from '../../contexts/ToastContext'
+import { loadImageFile, validateImageDimensions } from '../../utils/imageUploadHandler'
 import {
   CreatePostContainer,
   PostCard,
@@ -30,6 +34,11 @@ import {
   ActionButton,
   HashtagSection,
   SectionLabel,
+  CategorySection,
+  CategoryGrid,
+  CategoryButton,
+  CategoryIcon,
+  CategoryName,
   HashtagList,
   HashtagBadge,
   RemoveHashtagButton,
@@ -42,22 +51,26 @@ import {
 function CreatePost() {
   const user = getCurrentUser()
   const navigate = useNavigate()
+  const toast = useToast()
   const fileInputRef = useRef(null)
   const videoInputRef = useRef(null)
   const textAreaRef = useRef(null)
+  const [postText, setPostText] = useState('')
+  const [category, setCategory] = useState('Other')
+  const [showProfileModal, setShowProfileModal] = useState(false)
+  const [cropperImage, setCropperImage] = useState(null)
   useEffect(() => {
     if (!hasCompletedProfile(user)) {
       setShowProfileModal(true)
     }
   }, [user, navigate])
-  const [postText, setPostText] = useState('')
-  const [showProfileModal, setShowProfileModal] = useState(false)
   const [mediaFiles, setMediaFiles] = useState([])
   const [isDragging, setIsDragging] = useState(false)
   const [hashtags, setHashtags] = useState([])
   const [showEmojiPicker, setShowEmojiPicker] = useState(false)
   const MAX_CHARS = 500
   const MAX_IMAGES = 10
+  const categories = ['Sports', 'News', 'Trending', 'Entertainment', 'Food', 'Other']
   const extractHashtags = (text) => {
     const hashtagRegex = /#[\w]+/g
     const matches = text.match(hashtagRegex)
@@ -91,7 +104,50 @@ function CreatePost() {
   }
   const handleFileSelect = (e) => {
     const files = Array.from(e.target.files)
-    addMediaFiles(files)
+    if (files.length === 0) return
+
+    const imageFiles = files.filter(f => f.type.startsWith('image/'))
+    const videoFiles = files.filter(f => f.type.startsWith('video/'))
+
+    // Process images with cropper
+    if (imageFiles.length > 0) {
+      const firstImage = imageFiles[0]
+      loadImageFile(firstImage)
+        .then(async (base64) => {
+          // Validate dimensions
+          await validateImageDimensions(base64, 200, 200)
+          setCropperImage(base64)
+        })
+        .catch(error => {
+          toast.error(error.message)
+        })
+    }
+
+    // Add remaining image files without cropping (if multiple selected)
+    if (imageFiles.length > 1) {
+      const remainingImages = imageFiles.slice(1).map((file) => ({
+        file,
+        preview: URL.createObjectURL(file),
+        type: 'image',
+      }))
+      setMediaFiles((prev) => {
+        const combined = [...prev, ...remainingImages]
+        return combined.slice(0, MAX_IMAGES)
+      })
+    }
+
+    // Add all video files
+    if (videoFiles.length > 0) {
+      const videoMedia = videoFiles.map((file) => ({
+        file,
+        preview: URL.createObjectURL(file),
+        type: 'video',
+      }))
+      setMediaFiles((prev) => {
+        const combined = [...prev, ...videoMedia]
+        return combined.slice(0, MAX_IMAGES)
+      })
+    }
   }
   const addMediaFiles = (files) => {
     const newFiles = files.map((file) => ({
@@ -139,38 +195,119 @@ function CreatePost() {
   }
   const handleSubmit = async () => {
     if (!postText.trim() && mediaFiles.length === 0) {
-      alert('Please add some content to your post')
+      toast.warning('Please add either text content or media to your post')
       return
     }
     try {
       const formData = new FormData()
-      formData.append('content', postText)
+      formData.append('content', postText || '') // Allow empty content if media exists
+      formData.append('category', category)
       formData.append('hashtags', JSON.stringify(hashtags))
       formData.append('visibility', 'public')
       mediaFiles.forEach((media) => {
         formData.append('media', media.file)
       })
       const response = await createPost(formData)
-      alert(response.message || 'Post submitted!')
+      
+      // Show appropriate toast based on response
+      if (response.verificationStatus === 'pending' || response.verificationStatus === 'awaiting_review') {
+        toast.info(response.message || 'Your post is under review, please wait a moment')
+      } else if (response.verificationStatus === 'approved') {
+        toast.success(response.message || 'Post published successfully!')
+      } else {
+        toast.error(response.message || 'Post was rejected')
+      }
+      
       navigate('/feed')
     } catch (error) {
-      alert(`Failed to create post: ${error.message}`)
+      toast.error(`Failed to create post: ${error.message}`)
     }
   }
   const handleCancel = () => {
     if (postText || mediaFiles.length > 0) {
-      if (window.confirm('Discard this post?')) {
-        navigate('/feed')
-      }
-    } else {
-      navigate('/feed')
+      toast.warning('Draft discarded')
     }
+    navigate('/feed')
   }
   const isOverLimit = postText.length > MAX_CHARS
   const canSubmit = (postText.trim() || mediaFiles.length > 0) && !isOverLimit
   return (
     <>
     <CreatePostContainer>
+      {cropperImage && (
+        <ImageCropper
+          image={cropperImage}
+          onCrop={(croppedImage) => {
+            console.log('Cropped image received:', {
+              type: typeof croppedImage,
+              length: croppedImage?.length,
+              startsWithDataUrl: croppedImage?.startsWith('data:')
+            })
+            
+            if (!croppedImage) {
+              console.error('Cropped image is null or undefined')
+              toast.error('Failed to process cropped image')
+              setCropperImage(null)
+              return
+            }
+
+            try {
+              // Convert cropped base64 back to file
+              const arr = croppedImage.split(',')
+              const mime = arr[0].match(/:(.*?);/)?.[1]
+              if (!mime) {
+                console.error('Invalid base64 format:', arr[0])
+                toast.error('Invalid image format')
+                setCropperImage(null)
+                return
+              }
+              const bstr = atob(arr[1])
+              let n = bstr.length
+              const u8arr = new Uint8Array(n)
+              while (n--) {
+                u8arr[n] = bstr.charCodeAt(n)
+              }
+              
+              // Create a proper File object with correct extension
+              const extension = mime.includes('png') ? 'png' : mime.includes('gif') ? 'gif' : 'jpg'
+              const filename = `cropped-${Date.now()}.${extension}`
+              
+              const croppedFile = new File([u8arr], filename, { 
+                type: mime,
+                lastModified: Date.now()
+              })
+              
+              console.log('Created file:', {
+                name: croppedFile.name,
+                size: croppedFile.size,
+                type: croppedFile.type,
+                isFile: croppedFile instanceof File
+              })
+              
+              const newMedia = {
+                file: croppedFile,
+                preview: croppedImage,
+                type: 'image',
+              }
+              setMediaFiles((prev) => {
+                const updated = [...prev, newMedia]
+                return updated.slice(0, MAX_IMAGES)
+              })
+              setCropperImage(null)
+              toast.success('Image cropped and added successfully!')
+            } catch (error) {
+              console.error('Error processing cropped image:', error)
+              toast.error('Failed to process cropped image: ' + error.message)
+              setCropperImage(null)
+            }
+          }}
+          onCancel={() => {
+            setCropperImage(null)
+          }}
+          aspectRatio={1}
+          title="Crop Your Image"
+        />
+      )}
       <PostCard>
         {}
         <PostHeader>
@@ -179,7 +316,7 @@ function CreatePost() {
               user?.avatar?.startsWith('http') 
                 ? user.avatar 
                 : user?.avatar?.startsWith('/uploads')
-                ? `http://localhost:5000${user.avatar}`
+                ? `${API_BASE}${user.avatar}`
                 : 'https://via.placeholder.com/50'
             } 
             alt={user?.fullName} 
@@ -277,6 +414,22 @@ function CreatePost() {
           accept="video/*"
           onChange={handleFileSelect}
         />
+        <CategorySection>
+          <SectionLabel>Category</SectionLabel>
+          <CategoryGrid>
+            {categories.map((item) => (
+              <CategoryButton
+                key={item}
+                type="button"
+                $isSelected={category === item}
+                onClick={() => setCategory(item)}
+              >
+                <CategoryIcon>{item.charAt(0)}</CategoryIcon>
+                <CategoryName $isSelected={category === item}>{item}</CategoryName>
+              </CategoryButton>
+            ))}
+          </CategoryGrid>
+        </CategorySection>
         {hashtags.length > 0 && (
           <HashtagSection>
             <SectionLabel>Hashtags</SectionLabel>
@@ -311,7 +464,7 @@ function CreatePost() {
                   user?.avatar?.startsWith('http') 
                     ? user.avatar 
                     : user?.avatar?.startsWith('/uploads')
-                    ? `http://localhost:5000${user.avatar}`
+                    ? `${API_BASE}${user.avatar}`
                     : 'https://via.placeholder.com/50'
                 } 
                 alt={user?.fullName} 
@@ -346,3 +499,4 @@ function CreatePost() {
   )
 }
 export default CreatePost
+

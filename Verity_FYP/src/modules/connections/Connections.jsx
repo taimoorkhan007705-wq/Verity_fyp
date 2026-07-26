@@ -1,16 +1,22 @@
-import { useState, useEffect } from 'react'
+import { API_BASE, API_URL } from '../../config.js'
+import { useState, useEffect, useMemo } from 'react'
 import { Search, MessageCircle } from 'lucide-react'
-import { useNavigate } from 'react-router-dom'
+import { useNavigate, useLocation } from 'react-router-dom'
+import { useTheme } from '../../contexts/ThemeContext'
 import CompleteProfileModal from '../shared/CompleteProfileModal'
 import useProfileGuard from '../../utils/useProfileGuard'
+import Avatar from '../../components/Avatar/Avatar'
+import * as S from './Connections.styled'
 
-const API = 'http://localhost:5000/api'
+const API = `${API_URL}`
 const token = () => localStorage.getItem('token')
 
 const avatarUrl = (user) =>
   user.avatar?.startsWith('/uploads')
-    ? `http://localhost:5000${user.avatar}`
-    : `https://ui-avatars.com/api/?name=${encodeURIComponent(user.fullName || 'User')}&background=cccccc&color=555&size=150`
+    ? `${API_BASE}${user.avatar}`
+    : user.avatar?.startsWith('http')
+      ? user.avatar
+      : undefined
 
 const timeAgo = (date) => {
   if (!date) return ''
@@ -28,10 +34,12 @@ export default function Connections() {
   const [connections, setConnections] = useState([])
   const [requests, setRequests] = useState([])
   const [suggestions, setSuggestions] = useState([])
-  const [search, setSearch] = useState('')
   const [loading, setLoading] = useState(true)
   const navigate = useNavigate()
+  const location = useLocation()
+  const search = useMemo(() => new URLSearchParams(location.search).get('search') || '', [location.search])
   const { guard, showModal, closeModal } = useProfileGuard()
+  const { theme } = useTheme()
 
   useEffect(() => {
     Promise.all([
@@ -42,11 +50,11 @@ export default function Connections() {
       if (connData.success) setConnections(connData.connections)
       if (reqData.success) setRequests(reqData.requests)
       if (allData.success) {
-        // suggestions = users with no connection yet
         setSuggestions(allData.users.filter(u => u.connectionStatus === 'none'))
       }
     }).finally(() => setLoading(false))
   }, [])
+
 
   const accept = async (requesterId) => {
     if (!guard()) return
@@ -81,159 +89,164 @@ export default function Connections() {
     }
   }
 
+  const normalizedSearch = search.toLowerCase().trim()
   const filteredConnections = connections.filter(u =>
-    u.fullName.toLowerCase().includes(search.toLowerCase())
+    u.fullName.toLowerCase().includes(normalizedSearch) ||
+    u.role.toLowerCase().includes(normalizedSearch)
+  )
+  const filteredSuggestions = suggestions.filter(u =>
+    u.fullName.toLowerCase().includes(normalizedSearch) ||
+    u.role.toLowerCase().includes(normalizedSearch)
   )
 
   return (
-    <div style={{ maxWidth: 680, margin: '0 auto', padding: '1.5rem 1rem', fontFamily: 'sans-serif' }}>
+    <S.ConnectionsContainer theme={theme}>
+      {}
+      <S.Header>
+        <S.Title>Discover People</S.Title>
+        <S.SearchButton theme={theme}>
+          <Search size={18} />
+        </S.SearchButton>
+      </S.Header>
 
-      {/* Header */}
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
-        <h1 style={{ fontSize: '1.6rem', fontWeight: 900, color: '#0f172a', margin: 0 }}>Friends</h1>
-        <div style={{ width: 36, height: 36, borderRadius: '50%', backgroundColor: '#e2e8f0', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}>
-          <Search size={18} color="#0f172a" />
-        </div>
-      </div>
-
-      {/* Tabs */}
-      <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '1.5rem' }}>
+      {}
+      <S.TabsContainer>
         {['suggestions', 'friends'].map(t => (
-          <button key={t} onClick={() => setTab(t)} style={{
-            padding: '8px 20px', borderRadius: 20, border: 'none', cursor: 'pointer',
-            fontWeight: 700, fontSize: '0.9rem',
-            backgroundColor: tab === t ? '#0f172a' : '#e2e8f0',
-            color: tab === t ? 'white' : '#0f172a',
-          }}>
+          <S.TabButton
+            key={t}
+            $active={tab === t}
+            onClick={() => setTab(t)}
+            theme={theme}
+          >
             {t === 'suggestions' ? 'Suggestions' : 'Your friends'}
-          </button>
+          </S.TabButton>
         ))}
-      </div>
+      </S.TabsContainer>
 
       {loading ? (
-        <div style={{ textAlign: 'center', color: '#94a3b8', padding: '3rem' }}>Loading...</div>
+        <S.LoadingText theme={theme}>Loading...</S.LoadingText>
       ) : (
         <>
-          {/* ── SUGGESTIONS TAB ── */}
+          {}
           {tab === 'suggestions' && (
             <>
-              {/* Friend Requests section */}
+              {}
               {requests.length > 0 && (
-                <div style={{ marginBottom: '2rem' }}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
-                    <span style={{ fontSize: '1.1rem', fontWeight: 800, color: '#0f172a' }}>
-                      Friend requests <span style={{ color: '#ef4444' }}>{requests.length}</span>
-                    </span>
-                    <span style={{ color: '#1877f2', fontWeight: 600, fontSize: '0.9rem', cursor: 'pointer' }}>See all</span>
-                  </div>
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+                <S.Section>
+                  <S.SectionHeader>
+                    <S.SectionTitle theme={theme}>
+                      Friend requests <S.RequestBadge>{requests.length}</S.RequestBadge>
+                    </S.SectionTitle>
+                    <S.SeeAllLink theme={theme}>See all</S.SeeAllLink>
+                  </S.SectionHeader>
+                  <S.ItemsList>
                     {requests.map(user => (
-                      <div key={user.id} style={{ display: 'flex', gap: '0.875rem', alignItems: 'flex-start' }}>
-                        <img
-                          src={avatarUrl(user)}
-                          alt={user.fullName}
-                          style={{ width: 80, height: 80, borderRadius: '50%', objectFit: 'cover', flexShrink: 0 }}
-                        />
-                        <div style={{ flex: 1 }}>
-                          <div style={{ fontWeight: 800, fontSize: '1rem', color: '#0f172a', marginBottom: 2 }}>{user.fullName}</div>
-                          <div style={{ fontSize: '0.8rem', color: '#65676b', marginBottom: '0.6rem' }}>
+                      <S.UserItem key={user.id} theme={theme}>
+                        <Avatar src={avatarUrl(user)} name={user.fullName} alt={user.fullName} size={72} style={{ margin: '0 auto 0.75rem' }} />
+                        <S.UserInfo>
+                          <S.UserName theme={theme}>{user.fullName}</S.UserName>
+                          <S.UserRole theme={theme}>
                             {user.role} · {timeAgo(user.createdAt)}
-                          </div>
-                          <div style={{ display: 'flex', gap: '0.5rem' }}>
-                            <button onClick={() => accept(user.id)} style={{
-                              flex: 1, padding: '8px 0', borderRadius: 8, border: 'none', cursor: 'pointer',
-                              fontWeight: 700, fontSize: '0.9rem', backgroundColor: '#1877f2', color: 'white'
-                            }}>Confirm</button>
-                            <button onClick={() => reject(user.id)} style={{
-                              flex: 1, padding: '8px 0', borderRadius: 8, border: 'none', cursor: 'pointer',
-                              fontWeight: 700, fontSize: '0.9rem', backgroundColor: '#e4e6eb', color: '#0f172a'
-                            }}>Delete</button>
-                          </div>
-                        </div>
-                      </div>
+                          </S.UserRole>
+                          <S.ButtonGroup>
+                            <S.ConfirmButton
+                              onClick={() => accept(user.id)}
+                              theme={theme}
+                            >
+                              Confirm
+                            </S.ConfirmButton>
+                            <S.DeleteButton
+                              onClick={() => reject(user.id)}
+                              theme={theme}
+                            >
+                              Delete
+                            </S.DeleteButton>
+                          </S.ButtonGroup>
+                        </S.UserInfo>
+                      </S.UserItem>
                     ))}
-                  </div>
-                </div>
+                  </S.ItemsList>
+                </S.Section>
               )}
 
-              {/* People You May Know */}
-              <div>
-                <div style={{ fontSize: '1.1rem', fontWeight: 800, color: '#0f172a', marginBottom: '1rem' }}>
-                  People you may know
-                </div>
-                {suggestions.length === 0 ? (
-                  <div style={{ textAlign: 'center', color: '#94a3b8', padding: '2rem', fontSize: '0.9rem' }}>No suggestions right now</div>
+              {}
+              <S.Section>
+                <S.SectionTitle theme={theme}>People you may know</S.SectionTitle>
+                {filteredSuggestions.length === 0 ? (
+                  <S.EmptyState theme={theme}>No suggestions right now</S.EmptyState>
                 ) : (
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-                    {suggestions.map(user => (
-                      <div key={user.id} style={{ display: 'flex', gap: '0.875rem', alignItems: 'flex-start' }}>
-                        <img
-                          src={avatarUrl(user)}
-                          alt={user.fullName}
-                          style={{ width: 80, height: 80, borderRadius: '50%', objectFit: 'cover', flexShrink: 0 }}
-                        />
-                        <div style={{ flex: 1 }}>
-                          <div style={{ fontWeight: 800, fontSize: '1rem', color: '#0f172a', marginBottom: 2 }}>{user.fullName}</div>
-                          <div style={{ fontSize: '0.8rem', color: '#65676b', marginBottom: '0.6rem' }}>{user.role}</div>
-                          <button onClick={() => sendRequest(user.id)} style={{
-                            width: '100%', padding: '8px 0', borderRadius: 8, border: 'none', cursor: 'pointer',
-                            fontWeight: 700, fontSize: '0.9rem', backgroundColor: '#e7f3ff', color: '#1877f2'
-                          }}>Add Friend</button>
-                        </div>
-                      </div>
+                  <S.ItemsList>
+                    {filteredSuggestions.map(user => (
+                      <S.UserItem key={user.id} theme={theme}>
+                        <Avatar src={avatarUrl(user)} name={user.fullName} alt={user.fullName} size={72} style={{ margin: '0 auto 0.75rem' }} />
+                        <S.UserInfo>
+                          <S.UserName theme={theme}>{user.fullName}</S.UserName>
+                          <S.UserRole theme={theme}>{user.role}</S.UserRole>
+                          <S.AddFriendButton
+                            onClick={() => sendRequest(user.id)}
+                            theme={theme}
+                          >
+                            Connect
+                          </S.AddFriendButton>
+                        </S.UserInfo>
+                      </S.UserItem>
                     ))}
-                  </div>
+                  </S.ItemsList>
                 )}
-              </div>
+              </S.Section>
             </>
           )}
 
-          {/* ── YOUR FRIENDS TAB ── */}
+          {}
           {tab === 'friends' && (
             <>
-              {/* Search */}
-              <div style={{ position: 'relative', marginBottom: '1.25rem' }}>
-                <Search size={16} style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)', color: '#94a3b8' }} />
-                <input
+              {}
+              <S.SearchContainer>
+                <Search size={16} style={{
+                  position: 'absolute',
+                  left: 12,
+                  top: '50%',
+                  transform: 'translateY(-50%)',
+                  color: theme.colors.textTertiary
+                }} />
+                <S.SearchInput
                   value={search}
                   onChange={e => setSearch(e.target.value)}
                   placeholder="Search friends"
-                  style={{ width: '100%', padding: '10px 10px 10px 36px', borderRadius: 20, border: '1px solid #e2e8f0', outline: 'none', fontSize: '0.9rem', backgroundColor: '#f1f5f9', boxSizing: 'border-box' }}
+                  theme={theme}
                 />
-              </div>
+              </S.SearchContainer>
 
               {filteredConnections.length === 0 ? (
-                <div style={{ textAlign: 'center', color: '#94a3b8', padding: '3rem', fontSize: '0.9rem' }}>
+                <S.EmptyState theme={theme}>
                   {search ? 'No friends match your search' : 'No friends yet — send some requests!'}
-                </div>
+                </S.EmptyState>
               ) : (
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+                <S.FriendsList>
                   {filteredConnections.map(user => (
-                    <div key={user.id} style={{ display: 'flex', alignItems: 'center', gap: '0.875rem', padding: '0.75rem', borderRadius: 12, backgroundColor: 'white', boxShadow: '0 1px 4px rgba(0,0,0,0.06)' }}>
-                      <img
-                        src={avatarUrl(user)}
-                        alt={user.fullName}
-                        style={{ width: 60, height: 60, borderRadius: '50%', objectFit: 'cover', flexShrink: 0 }}
-                      />
-                      <div style={{ flex: 1 }}>
-                        <div style={{ fontWeight: 800, fontSize: '0.95rem', color: '#0f172a' }}>{user.fullName}</div>
-                        <div style={{ fontSize: '0.8rem', color: '#65676b' }}>{user.role}</div>
-                      </div>
-                      <button
+                    <S.FriendItem key={user.id} theme={theme}>
+                      <Avatar src={avatarUrl(user)} name={user.fullName} alt={user.fullName} size={80} style={{ margin: '0 auto 0.75rem' }} />
+                      <S.FriendInfo>
+                        <S.FriendName theme={theme}>{user.fullName}</S.FriendName>
+                        <S.FriendRole theme={theme}>{user.role}</S.FriendRole>
+                      </S.FriendInfo>
+                      <S.MessageButton
                         onClick={() => { if (!guard()) return; navigate(`/messages/${user.id}`) }}
-                        style={{ display: 'flex', alignItems: 'center', gap: 5, padding: '8px 14px', borderRadius: 8, border: 'none', cursor: 'pointer', fontWeight: 700, fontSize: '0.85rem', backgroundColor: '#e4e6eb', color: '#0f172a' }}
+                        theme={theme}
                       >
-                        <MessageCircle size={15} /> Message
-                      </button>
-                    </div>
+                        <MessageCircle />
+                        <span>Message</span>
+                      </S.MessageButton>
+                    </S.FriendItem>
                   ))}
-                </div>
+                </S.FriendsList>
               )}
             </>
           )}
         </>
       )}
       {showModal && <CompleteProfileModal onClose={closeModal} />}
-    </div>
+    </S.ConnectionsContainer>
   )
 }
+

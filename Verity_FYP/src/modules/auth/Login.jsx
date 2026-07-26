@@ -28,16 +28,29 @@ const Login = () => {
     try {
       const response = await login(formData)
       console.log('Login response:', response)
-      alert(`Welcome back, ${response.user.fullName}!`)
-      if (response.user.role === 'Admin') {
-        window.location.href = '/admin'
-      } else if (response.user.role === 'Business') {
-        window.location.href = '/dashboard'
-      } else if (response.user.role === 'Reviewer') {
-        window.location.href = '/review-center'
+      
+      // Handle "Remember Me" checkbox
+      if (rememberMe) {
+        localStorage.setItem('rememberMe', 'true')
+        localStorage.setItem('rememberEmail', formData.email)
       } else {
-        window.location.href = '/feed'
+        localStorage.setItem('rememberMe', 'false')
+        localStorage.removeItem('rememberEmail')
       }
+      
+      alert(`Welcome back, ${response.user.fullName}!`)
+      // Use setTimeout to ensure localStorage is written before redirect
+      setTimeout(() => {
+        if (response.user.role === 'Admin') {
+          window.location.href = '/admin'
+        } else if (response.user.role === 'Business') {
+          window.location.href = '/dashboard'
+        } else if (response.user.role === 'Reviewer') {
+          window.location.href = '/review-center'
+        } else {
+          window.location.href = '/feed'
+        }
+      }, 100)
     } catch (error) {
       setError(error.message || 'Login failed')
     } finally {
@@ -144,6 +157,12 @@ const Login = () => {
                 onChange={(e) => setRememberMe(e.target.checked)}
               />
               <RememberMeLabel htmlFor="rememberMe">Remember me</RememberMeLabel>
+              <SignUpLink 
+                onClick={() => navigate('/forgot-password')}
+                style={{ marginLeft: 'auto' }}
+              >
+                Forgot password?
+              </SignUpLink>
             </RememberMeContainer>
             <SignInButton type="submit" disabled={loading}>
               {loading ? 'Signing In...' : 'Sign In'}
@@ -158,3 +177,4 @@ const Login = () => {
   )
 }
 export default Login
+

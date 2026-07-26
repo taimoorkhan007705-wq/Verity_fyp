@@ -1,12 +1,14 @@
-﻿import { useState, useEffect } from "react"
+import { API_BASE, API_URL } from '../../config.js'
+import { useState, useEffect } from "react"
 import { Users, FileText, BarChart2, Trash2, ShieldOff, Shield, AlertTriangle, Star, LogOut, Search, X, TrendingUp, Link2, CheckCircle } from "lucide-react"
+import Avatar from '../../components/Avatar/Avatar'
 import { logout as apiLogout } from "../../services/api"
 import { useNavigate } from "react-router-dom"
 
-const API = "http://localhost:5000/api/admin"
+const API = `${API_BASE}/api/admin`
 const token = () => localStorage.getItem("token")
 const hdrs = () => ({ Authorization: `Bearer ${token()}`, "Content-Type": "application/json" })
-const avatarUrl = (u) => u?.avatar?.startsWith("/uploads") ? `http://localhost:5000${u.avatar}` : `https://ui-avatars.com/api/?name=${encodeURIComponent(u?.fullName||"U")}&background=6366f1&color=fff&size=80`
+const avatarUrl = (u) => (u?.avatar?.startsWith("http") ? u.avatar : u?.avatar?.startsWith("/uploads") ? `${API_BASE}${u.avatar}` : undefined)
 const RC = { User:"#3b82f6", Reviewer:"#10b981", Business:"#f59e0b", Admin:"#6366f1" }
 const aBtn = (c) => ({ backgroundColor:c+"18", color:c, border:"none", borderRadius:8, width:30, height:30, display:"flex", alignItems:"center", justifyContent:"center", cursor:"pointer", fontWeight:700, fontSize:"0.8rem" })
 
@@ -17,7 +19,7 @@ function SC({ icon: Icon, label, value, color }) {
         <Icon size={24} color={color} />
       </div>
       <div>
-        <div style={{ fontSize:"1.6rem", fontWeight:900, color:"#0f172a" }}>{value ?? "—"}</div>
+        <div style={{ fontSize:"1.6rem", fontWeight:900, color:"#0f172a" }}>{value ?? "�"}</div>
         <div style={{ fontSize:"0.82rem", color:"#64748b", fontWeight:600 }}>{label}</div>
       </div>
     </div>
@@ -123,7 +125,7 @@ export default function AdminDashboard() {
                     <div style={{ fontWeight:800, marginBottom:"1rem" }}>Recent Signups</div>
                     {users.slice(0,5).map(u => (
                       <div key={u.id} style={{ display:"flex", alignItems:"center", gap:"0.75rem", marginBottom:"0.75rem" }}>
-                        <img src={avatarUrl(u)} alt="" style={{ width:38, height:38, borderRadius:"50%", objectFit:"cover" }} />
+                        <Avatar src={avatarUrl(u)} name={u.fullName} alt={u.fullName} size={38} />
                         <div style={{ flex:1 }}>
                           <div style={{ fontWeight:700, fontSize:"0.9rem", display:"flex", alignItems:"center", gap:4 }}>
                             {u.fullName} {u.isVerified && <CheckCircle size={14} color="#10b981" fill="#10b981" />}
@@ -153,7 +155,7 @@ export default function AdminDashboard() {
                           <tr key={u.id} style={{ borderBottom:"1px solid #f1f5f9" }}>
                             <td style={{ padding:"12px 16px" }}>
                               <div style={{ display:"flex", alignItems:"center", gap:"0.625rem" }}>
-                                <img src={avatarUrl(u)} alt="" style={{ width:36, height:36, borderRadius:"50%", objectFit:"cover" }} />
+                                <Avatar src={avatarUrl(u)} name={u.fullName} alt={u.fullName} size={36} />
                                 <div>
                                   <div style={{ fontWeight:700, display:"flex", alignItems:"center", gap:4 }}>
                                     {u.fullName}
@@ -227,3 +229,4 @@ export default function AdminDashboard() {
     </div>
   )
 }
+

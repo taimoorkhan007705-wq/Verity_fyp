@@ -135,3 +135,4 @@ productSchema.index({ category: 1 })
 productSchema.index({ isActive: 1 })
 const Product = mongoose.model('Product', productSchema)
 export default Product
+

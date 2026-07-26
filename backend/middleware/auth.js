@@ -16,16 +16,18 @@ export const protect = async (req, res, next) => {
       return res.status(401).json({ success: false, message: 'Not authorized, no token' })
     }
     const decoded = jwt.verify(token, process.env.JWT_SECRET)
-    let user = await User.findById(decoded.id).select('-password')
-    if (!user) user = await Reviewer.findById(decoded.id).select('-password')
-    if (!user) user = await Business.findById(decoded.id).select('-password')
+        const requestedRole = decoded.role
+    const Model = getModelByRole(requestedRole)
+    const user = await Model.findById(decoded.id).select('-password')
+
     if (!user) {
-      return res.status(401).json({ success: false, message: 'User not found' })
+            return res.status(401).json({ success: false, message: 'User not found' })
     }
-    req.user = user
+
+        req.user = user
     next()
   } catch (error) {
-    res.status(401).json({ success: false, message: 'Not authorized, token failed' })
+        res.status(401).json({ success: false, message: 'Not authorized, token failed' })
   }
 }
 export const restrictTo = (...roles) => {
@@ -39,3 +41,4 @@ export const restrictTo = (...roles) => {
     next()
   }
 }
+

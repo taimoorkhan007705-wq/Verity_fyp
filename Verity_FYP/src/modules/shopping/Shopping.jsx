@@ -1,5 +1,7 @@
+import { API_BASE, API_URL, mediaUrl } from '../../config.js'
 import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
+import Avatar from '../../components/Avatar/Avatar'
 import { ShoppingBag, Heart, MessageCircle, Eye, Search, Filter } from 'lucide-react'
 import {
   ShoppingContainer,
@@ -17,7 +19,6 @@ import {
   ProductName,
   ProductPrice,
   ProductBusiness,
-  BusinessAvatar,
   BusinessName,
   ProductStats,
   StatItem,
@@ -64,7 +65,7 @@ function Shopping() {
       if (selectedCategory !== 'All') params.append('category', selectedCategory)
       if (searchQuery) params.append('search', searchQuery)
       console.log('Fetching products with params:', params.toString())
-      const response = await fetch(`http://localhost:5000/api/products?${params}`)
+      const response = await fetch(`${API_BASE}/api/products?${params}`)
       console.log('Response status:', response.status)
       const data = await response.json()
       console.log('Products data:', data)
@@ -87,7 +88,7 @@ function Shopping() {
     e.stopPropagation()
     try {
       const token = localStorage.getItem('token')
-      const response = await fetch(`http://localhost:5000/api/products/${productId}/like`, {
+      const response = await fetch(`${API_BASE}/api/products/${productId}/like`, {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${token}`
@@ -106,7 +107,7 @@ function Shopping() {
     if (message && message.trim()) {
       try {
         const token = localStorage.getItem('token')
-        const response = await fetch(`http://localhost:5000/api/products/${product._id}/inquiry`, {
+        const response = await fetch(`${API_BASE}/api/products/${product._id}/inquiry`, {
           method: 'POST',
           headers: {
             'Authorization': `Bearer ${token}`,
@@ -182,7 +183,7 @@ function Shopping() {
               <ProductImage
                 src={
                   product.images && product.images.length > 0
-                    ? `http://localhost:5000${product.images[0].url}`
+                    ? mediaUrl(product.images[0].url)
                     : 'https://via.placeholder.com/300x300?text=No+Image'
                 }
                 alt={product.name}
@@ -191,13 +192,11 @@ function Shopping() {
                 <ProductName>{product.name}</ProductName>
                 <ProductPrice>${product.price.toFixed(2)}</ProductPrice>
                 <ProductBusiness>
-                  <BusinessAvatar
-                    src={
-                      product.business?.profile_info?.avatar
-                        ? `http://localhost:5000${product.business.profile_info.avatar}`
-                        : `https://ui-avatars.com/api/?name=${encodeURIComponent(product.business?.user_info?.fullName || 'Business')}&background=14b8a6&color=fff&size=150`
-                    }
-                    alt={product.business?.user_info?.fullName}
+                  <Avatar
+                  src={product.business?.profile_info?.avatar ? `${API_BASE}${product.business.profile_info.avatar}` : undefined}
+                  name={product.business?.user_info?.fullName || 'Business'}
+                  alt={product.business?.user_info?.fullName || 'Business'}
+                  size={40}
                   />
                   <BusinessName>{product.business?.user_info?.fullName}</BusinessName>
                 </ProductBusiness>
@@ -238,3 +237,4 @@ function Shopping() {
   )
 }
 export default Shopping
+

@@ -9,3 +9,5 @@ router.get('/user/:userId', protect, getUserStories)
 router.post('/:storyId/view', protect, viewStory)
 router.delete('/:storyId', protect, deleteStory)
 export default router
+
+

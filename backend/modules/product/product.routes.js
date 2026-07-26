@@ -21,3 +21,5 @@ router.delete('/:id', protect, deleteProduct)
 router.post('/:id/inquiry', protect, sendInquiry)
 router.post('/:id/like', protect, likeProduct)
 export default router
+
+

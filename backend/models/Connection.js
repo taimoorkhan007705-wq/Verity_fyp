@@ -35,3 +35,4 @@ const connectionSchema = new mongoose.Schema({
 connectionSchema.index({ follower: 1, following: 1 }, { unique: true })
 const Connection = mongoose.model('Connection', connectionSchema)
 export default Connection
+

@@ -1,5 +1,7 @@
+import { API_BASE, API_URL, mediaUrl } from '../../config.js'
 import React, { useState, useEffect } from 'react';
 import { MessageSquare, Package } from 'lucide-react';
+import Avatar from '../../components/Avatar/Avatar'
 const BusinessMessages = () => {
   const [inquiries, setInquiries] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -9,7 +11,7 @@ const BusinessMessages = () => {
   const loadInquiries = async () => {
     try {
       const token = localStorage.getItem('token');
-      const response = await fetch('http://localhost:5000/api/products/business/my-products', {
+      const response = await fetch(`${API_URL}/products/business/my-products`, {
         headers: {
           'Authorization': `Bearer ${token}`
         }
@@ -25,13 +27,13 @@ const BusinessMessages = () => {
                 productId: product._id,
                 productName: product.name,
                 productImage: product.images && product.images.length > 0 
-                  ? `http://localhost:5000${product.images[0].url}` 
+                  ? mediaUrl(product.images[0].url)
                   : null,
                 userName: inquiry.user?.user_info?.fullName || inquiry.user?.fullName || 'User',
                 userEmail: inquiry.user?.email || '',
-                userAvatar: inquiry.user?.profile_info?.avatar 
-                  ? `http://localhost:5000${inquiry.user.profile_info.avatar}`
-                  : `https://ui-avatars.com/api/?name=${encodeURIComponent(inquiry.user?.user_info?.fullName || 'User')}&background=14b8a6&color=fff&size=150`,
+                userAvatar: inquiry.user?.profile_info?.avatar
+                  ? `${API_BASE}${inquiry.user.profile_info.avatar}`
+                  : undefined,
                 message: inquiry.message,
                 time: formatTime(inquiry.createdAt),
                 createdAt: inquiry.createdAt
@@ -116,16 +118,12 @@ const BusinessMessages = () => {
             onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'white'}
           >
             <div style={{ display: 'flex', gap: '1rem', marginBottom: '0.75rem' }}>
-              <img 
+              <Avatar
                 src={inquiry.userAvatar}
+                name={inquiry.userName}
                 alt={inquiry.userName}
-                style={{ 
-                  width: '48px', 
-                  height: '48px', 
-                  borderRadius: '50%',
-                  objectFit: 'cover',
-                  border: '2px solid #14b8a6'
-                }}
+                size={48}
+                style={{ border: '2px solid #14b8a6' }}
               />
               <div style={{ flex: 1 }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'start', marginBottom: '0.25rem' }}>
@@ -167,3 +165,4 @@ const BusinessMessages = () => {
   );
 };
 export default BusinessMessages;
+

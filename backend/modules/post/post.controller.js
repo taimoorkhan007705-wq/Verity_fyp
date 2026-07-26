@@ -2,47 +2,248 @@ import Post from '../../models/Post.js'
 import User from '../../models/User.js'
 import Reviewer from '../../models/Reviewer.js'
 import Business from '../../models/Business.js'
+import Notification from '../../models/Notification.js'
 import path from 'path'
 import { checkMediaWithAI } from '../../services/aiDetection.js'
+import { isNewsClaim } from '../../services/ocrService.js'
+import { factCheckWithMistral, interpretFactCheck } from '../../services/factCheckService.js'
+import { classifyPostCategory, quickCategoryGuess } from '../../services/categoryClassifier.js'
+import { detectFakeContent } from '../../services/fakeContentDetector.js'
+import { assignReviewersToPost } from '../../services/reviewerAssignment.js'
 
 const getModelByRole = (role) => {
   const models = { Reviewer, Business, User }
   return models[role] || User
 }
 
+// Background AI processing function
+const processPostAI = async (postId, mediaFiles, captionText) => {
+  try {
+    console.log('[ProcessPostAI] 🔄 Starting AI processing for post:', { postId, hasMedia: mediaFiles.length > 0, textLength: captionText.length })
+    
+    let verificationStatus = 'pending'
+    let aiRejectionReason = null
+    let collectedExtractedText = ''
+    let pendingReason = ''
+    let aiDetectionScore = 0
+    let aiDetectionVerdict = 'safe'
+
+    // ═══════════════════════════════════════════════════════════════
+    // STEP 0: AI Category Classification (always runs, non-blocking)
+    // ═══════════════════════════════════════════════════════════════
+    try {
+      const categoryResult = await classifyPostCategory(captionText, mediaFiles)
+      const post = await Post.findById(postId)
+      if (post) {
+        // Preserve user-selected categories; only overwrite category if it was auto-guessed
+        if (post.categoryConfidence < 1) {
+          post.category = categoryResult.category
+          post.categoryConfidence = categoryResult.confidence
+          post.categoryReasoning = categoryResult.reasoning
+          await post.save()
+          console.log('[ProcessPostAI] ✅ Category classified:', categoryResult.category)
+        } else {
+          // Category already set by user, skip auto-classification
+        }
+      }
+    } catch (categoryError) {
+      console.log('[ProcessPostAI] ⚠️  Category classification skipped:', categoryError.message)
+      // Continue with moderation even if categorization fails
+    }
+
+    // ═══════════════════════════════════════════════════════════════
+    // STEP 1: FAKE CONTENT DETECTION (New Priority Check)
+    // ═══════════════════════════════════════════════════════════════
+    console.log('[ProcessPostAI] 🔍 Running fake content detection...')
+    const fakeDetectionResult = await detectFakeContent(captionText, mediaFiles)
+    
+    console.log('[ProcessPostAI] Detection result:', {
+      verdict: fakeDetectionResult.verdict,
+      score: fakeDetectionResult.score,
+      reason: fakeDetectionResult.reason
+    })
+    
+    aiDetectionScore = fakeDetectionResult.score
+    aiDetectionVerdict = fakeDetectionResult.verdict === 'fake' ? 'fake' 
+      : fakeDetectionResult.isAIGenerated ? 'ai_generated'
+      : fakeDetectionResult.verdict === 'suspicious' ? 'suspicious'
+      : 'safe'
+
+    // IMMEDIATE REJECTION: Fake or highly misleading content
+    if (fakeDetectionResult.verdict === 'fake') {
+      console.log('[ProcessPostAI] ❌ POST AI REJECTED:', { postId, reason: fakeDetectionResult.reason })
+      verificationStatus = 'ai_rejected'
+      aiRejectionReason = fakeDetectionResult.reason
+      
+      const post = await Post.findById(postId).populate('author', 'email user_info.fullName')
+      if (post) {
+        post.verificationStatus = verificationStatus
+        post.aiRejectionReason = aiRejectionReason
+        post.aiDetectionScore = aiDetectionScore
+        post.aiDetectionVerdict = aiDetectionVerdict
+        post.reviewNotes = `AI Auto-Rejection: ${aiRejectionReason}`
+        await post.save()
+        
+        // Notify user immediately
+        await Notification.create({
+          user: post.author._id,
+          userModel: post.authorModel,
+          type: 'post_rejected',
+          title: '❌ Post Rejected by AI',
+          message: `Your post was automatically rejected. Reason: ${aiRejectionReason}`,
+          relatedPost: postId
+        })
+        
+              }
+      return // Stop processing - post is rejected
+    }
+
+    // SEND TO REVIEWERS: Suspicious content or flagged by AI
+    if (fakeDetectionResult.verdict === 'suspicious' || fakeDetectionResult.isAIGenerated) {
+      verificationStatus = 'awaiting_review'
+      pendingReason = fakeDetectionResult.reason
+      
+      const post = await Post.findById(postId)
+      if (post) {
+        post.verificationStatus = verificationStatus
+        post.pendingReason = pendingReason
+        post.aiDetectionScore = aiDetectionScore
+        post.aiDetectionVerdict = aiDetectionVerdict
+        await post.save()
+        
+        // Assign all active reviewers to this post
+        await assignReviewersToPost(postId)
+              }
+      return // Stop here - post is now in reviewer queue
+    }
+
+    // ═══════════════════════════════════════════════════════════════
+    // STEP 2: Additional Media Moderation (Sightengine checks)
+    // ═══════════════════════════════════════════════════════════════
+        for (const item of mediaFiles) {
+      const result = await checkMediaWithAI(item._localPath, item._mimeType)
+            if (result.extractedText) {
+        collectedExtractedText += (collectedExtractedText ? ' | ' : '') + result.extractedText
+      }
+
+      if (result.verdict === 'rejected') {
+        // Explicit/offensive content → auto-reject
+        verificationStatus = 'ai_rejected'
+        aiRejectionReason = result.reason
+        
+        const post = await Post.findById(postId).populate('author', 'email user_info.fullName')
+        if (post) {
+          post.verificationStatus = verificationStatus
+          post.aiRejectionReason = aiRejectionReason
+          post.reviewNotes = `AI Auto-Rejection: ${result.reason}`
+          post.extractedText = collectedExtractedText
+          await post.save()
+          
+          // Notify user
+          await Notification.create({
+            user: post.author._id,
+            userModel: post.authorModel,
+            type: 'post_rejected',
+            title: '❌ Post Rejected by AI',
+            message: `Your post was automatically rejected. Reason: ${result.reason}`,
+            relatedPost: postId
+          })
+          
+                  }
+        return
+      } else if (result.verdict === 'pending') {
+        // Uncertain content → send to reviewers
+        verificationStatus = 'awaiting_review'
+        pendingReason = result.reason
+      }
+    }
+
+    // ═══════════════════════════════════════════════════════════════
+    // STEP 3: Final Decision
+    // ═══════════════════════════════════════════════════════════════
+    const post = await Post.findById(postId)
+    if (post) {
+      if (verificationStatus === 'awaiting_review') {
+        // Send to reviewer queue
+        post.verificationStatus = verificationStatus
+        post.pendingReason = pendingReason
+        post.extractedText = collectedExtractedText || undefined
+        post.aiDetectionScore = aiDetectionScore
+        post.aiDetectionVerdict = aiDetectionVerdict
+        await post.save()
+        
+        await assignReviewersToPost(postId)
+              } else {
+        // All checks passed → approve immediately
+        post.verificationStatus = 'approved'
+        post.aiDetectionScore = aiDetectionScore
+        post.aiDetectionVerdict = 'safe'
+        post.extractedText = collectedExtractedText || undefined
+        await post.save()
+              }
+    }
+  } catch (error) {
+    console.error('[ProcessPostAI] 🔥 Critical error during AI processing:', {
+      postId,
+      error: error.message
+    })
+    
+    // If AI check fails, send to reviewers for manual review
+    try {
+      const post = await Post.findById(postId)
+      if (post && post.verificationStatus === 'pending') {
+        post.verificationStatus = 'awaiting_review'
+        post.pendingReason = 'AI check failed - manual review required'
+        await post.save()
+        await assignReviewersToPost(postId)
+        console.log('[ProcessPostAI] ✅ Fallback: Post sent to reviewers due to AI error')
+      }
+    } catch (fallbackError) {
+      console.error('[ProcessPostAI] 🔥 Fallback handler failed:', fallbackError.message)
+    }
+  }
+}
+
 export const createPost = async (req, res) => {
   try {
-    const { content, hashtags, visibility } = req.body
+    const { content, hashtags, visibility, category } = req.body
     const userId = req.user.id
     const userRole = req.user.role
 
-    const media = req.files ? req.files.map(file => ({
-      type: file.mimetype.startsWith('image/') ? 'image' : 'video',
-      url: `/uploads/users/${userId}/posts/${file.filename}`,
-      _localPath: file.path,
-      _mimeType: file.mimetype
-    })) : []
+    console.log('[CreatePost] 📝 Received post creation request:', {
+      hasFiles: !!req.files,
+      fileCount: req.files?.length || 0,
+      content: content?.substring(0, 50),
+      category,
+      userId
+    })
 
-    // run AI detection on each media file
-    let verificationStatus = 'approved' // default for text-only posts
-    let aiRejectionReason = null
-
-    if (media.length > 0) {
-      verificationStatus = 'approved' // optimistic — downgrade if any file fails
-      for (const item of media) {
-        const result = await checkMediaWithAI(item._localPath, item._mimeType)
-        console.log(`AI check [${item._mimeType}]: score=${result.score} verdict=${result.verdict} reason=${result.reason}`)
-
-        if (result.verdict === 'rejected') {
-          verificationStatus = 'rejected'
-          aiRejectionReason = result.reason
-          break
-        } else if (result.verdict === 'pending') {
-          verificationStatus = 'pending' // uncertain — send to reviewer
-        }
-        // if approved, keep current status (don't downgrade from pending)
+    const media = req.files ? req.files.map(file => {
+      console.log('[CreatePost] 🖼️  Processing file:', {
+        filename: file.filename,
+        mimetype: file.mimetype,
+        size: file.size,
+        path: file.path
+      })
+      return {
+        type: file.mimetype.startsWith('image/') ? 'image' : 'video',
+        url: `/uploads/users/${userId}/posts/${file.filename}`,
+        _localPath: file.path,
+        _mimeType: file.mimetype
       }
-    }
+    }) : []
+
+    console.log('[CreatePost] 📦 Processed media count:', media.length)
+
+    // Quick category guess for immediate response if the user didn't choose one
+    const initialCategory = quickCategoryGuess(content)
+    const allowedCategories = ['Sports', 'News', 'Trending', 'Entertainment', 'Food', 'Other']
+    const selectedCategory = allowedCategories.includes(category) ? category : initialCategory
+    const categorySource = allowedCategories.includes(category) ? 'User selected category' : 'Quick keyword-based classification'
+
+    // For text-only posts, approve immediately
+    // For media posts, send straight to reviewer queue so the dashboard can show them
+    const verificationStatus = media.length > 0 ? 'awaiting_review' : 'approved'
 
     // strip internal fields before saving
     const cleanMedia = media.map(({ _localPath, _mimeType, ...rest }) => rest)
@@ -53,44 +254,72 @@ export const createPost = async (req, res) => {
       content,
       media: cleanMedia,
       hashtags: hashtags ? JSON.parse(hashtags) : [],
+      category: selectedCategory,
+      categoryConfidence: allowedCategories.includes(category) ? 1 : 0.5,
+      categoryReasoning: allowedCategories.includes(category) ? categorySource : 'Quick keyword-based classification',
       visibility: visibility || 'public',
       verificationStatus,
-      reviewNotes: aiRejectionReason || undefined
+      pendingReason: media.length > 0 ? 'AI verification in progress...' : undefined
     })
+
+    console.log('[CreatePost] ✅ Post created:', { postId: post._id, verificationStatus })
 
     await post.populate('author', 'user_info.fullName email profile_info.avatar role')
 
-    const messages = {
-      approved: 'Post published successfully!',
-      pending: 'Post submitted for human review — our reviewers will verify it shortly.',
-      rejected: `Post rejected: ${aiRejectionReason}`
+    // Immediately assign all active reviewers for media posts so they appear in the reviewer queue
+    if (media.length > 0) {
+      console.log('[CreatePost] 👥 Assigning reviewers to media post...')
+      await assignReviewersToPost(post._id)
     }
+
+    // Run AI checks in background (non-blocking) - includes category classification
+    if (media.length > 0 || content) {
+      console.log('[CreatePost] 🤖 Triggering background AI processing...')
+      // Don't await - let it run in background
+      processPostAI(post._id, media, content).catch(err => {
+        console.error('[CreatePost] Background AI processing error:', err.message)
+      })
+    }
+
+    const message = media.length > 0 
+      ? 'Your media post has been sent to the reviewer queue for verification.'
+      : 'Post published successfully!'
 
     res.status(201).json({
       success: true,
-      message: messages[verificationStatus],
+      message,
       verificationStatus,
       post
     })
   } catch (error) {
+    console.error('[CreatePost] ❌ Error creating post:', error)
     res.status(500).json({ success: false, message: 'Failed to create post', error: error.message })
   }
 }
+
 export const getFeed = async (req, res) => {
   try {
-    const { page = 1, limit = 10 } = req.query
-    const posts = await Post.find({ 
+    const { page = 1, limit = 10, category } = req.query
+    
+    const query = { 
       visibility: 'public',
       verificationStatus: 'approved'
-    })
+    }
+    
+    // Filter by category if provided and not "All"
+    if (category && category !== 'All') {
+      query.category = category
+    }
+    // "All" shows all categories
+    
+    const posts = await Post.find(query)
       .sort({ createdAt: -1 })
       .limit(limit * 1)
       .skip((page - 1) * limit)
       .populate('author', 'user_info.fullName email profile_info.avatar role')
-    const count = await Post.countDocuments({ 
-      visibility: 'public',
-      verificationStatus: 'approved'
-    })
+    
+    const count = await Post.countDocuments(query)
+    
     res.json({
       success: true,
       posts,
@@ -209,3 +438,41 @@ export const getMyRejectedPosts = async (req, res) => {
     res.status(500).json({ success: false, message: 'Failed to fetch rejected posts', error: error.message })
   }
 }
+
+export const getMyPendingPosts = async (req, res) => {
+  try {
+    const userId = req.user.id
+    const posts = await Post.find({ author: userId, isDeleted: false, verificationStatus: 'pending' })
+      .sort({ createdAt: -1 })
+    res.json({ success: true, posts })
+  } catch (error) {
+    res.status(500).json({ success: false, message: 'Failed to fetch pending posts', error: error.message })
+  }
+}
+
+export const checkPostStatus = async (req, res) => {
+  try {
+    const postId = req.params.id
+    const post = await Post.findById(postId)
+    
+    if (!post) {
+      return res.status(404).json({ success: false, message: 'Post not found' })
+    }
+
+    // Only allow author to check their own post status
+    if (post.author.toString() !== req.user.id) {
+      return res.status(403).json({ success: false, message: 'Not authorized' })
+    }
+
+    res.json({
+      success: true,
+      status: post.verificationStatus,
+      reason: post.reviewNotes || post.pendingReason || null,
+      extractedText: post.extractedText || null
+    })
+  } catch (error) {
+    res.status(500).json({ success: false, message: 'Failed to check post status', error: error.message })
+  }
+}
+
+

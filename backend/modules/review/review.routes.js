@@ -7,3 +7,5 @@ router.post('/submit', protect, restrictTo('Reviewer'), submitReview)
 router.get('/stats', protect, restrictTo('Reviewer'), getReviewerStats)
 router.get('/history', protect, restrictTo('Reviewer'), getReviewHistory)
 export default router
+
+

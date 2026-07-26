@@ -1,4 +1,4 @@
-const API_URL = 'http://localhost:5000/api'
+import { API_BASE, API_URL } from '../config.js'
 export const createPost = async (formData) => {
   try {
     const token = localStorage.getItem('token')
@@ -18,9 +18,18 @@ export const createPost = async (formData) => {
     throw error
   }
 }
-export const getFeed = async (page = 1, limit = 10) => {
+export const getFeed = async (page = 1, limit = 10, category = null) => {
   try {
-    const response = await fetch(`${API_URL}/posts/feed?page=${page}&limit=${limit}`, {
+    const params = new URLSearchParams({
+      page: page.toString(),
+      limit: limit.toString()
+    })
+    
+    if (category && category !== 'All') {
+      params.append('category', category)
+    }
+    
+    const response = await fetch(`${API_URL}/posts/feed?${params}`, {
       method: 'GET',
       headers: {
         'Content-Type': 'application/json',

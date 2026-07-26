@@ -1,8 +1,10 @@
+import { API_BASE, API_URL } from '../../config.js'
 import { useState, useEffect } from 'react'
 import { Plus, X } from 'lucide-react'
 import { useNavigate } from 'react-router-dom'
 import { getStories, createStory } from '../../services/api'
 import { hasCompletedProfile } from '../../utils/profileCheck'
+import Avatar from '../../components/Avatar/Avatar'
 import CompleteProfileModal from '../shared/CompleteProfileModal'
 import StoryViewer from './StoryViewer'
 import {
@@ -96,7 +98,7 @@ const Stories = () => {
   const handleYourStoryImageClick = (e) => {
     const currentUserId = currentUser?._id?.toString() || currentUser?._id
     const userStories = stories.find(storyGroup => 
-      storyGroup.author._id.toString() === currentUserId
+      storyGroup?.author?._id?.toString() === currentUserId
     )
     if (userStories) {
       handleStoryClick(userStories)
@@ -124,27 +126,32 @@ const Stories = () => {
           {(() => {
             const currentUserId = currentUser?._id
             const userStories = stories.find(storyGroup => 
-              storyGroup.author._id === currentUserId
+              storyGroup?.author?._id === currentUserId
             )
             const hasStories = !!userStories
             return (
               <div style={{ position: 'relative', display: 'inline-block' }}>
                 <StoryCircle onClick={hasStories ? () => handleStoryClick(userStories) : undefined}>
                   <StoryRing $hasViewed={hasStories ? userStories.stories.every(s => s.hasViewed) : false}>
-                    <StoryImage 
-                      src={
-                        currentUser?.profile_info?.avatar 
-                          ? (currentUser.profile_info.avatar.startsWith('http') 
-                              ? currentUser.profile_info.avatar 
-                              : `http://localhost:5000${currentUser.profile_info.avatar}`)
-                          : currentUser?.avatar
-                          ? (currentUser.avatar.startsWith('http') 
-                              ? currentUser.avatar 
-                              : `http://localhost:5000${currentUser.avatar}`)
-                          : `https://ui-avatars.com/api/?name=${encodeURIComponent(currentUser?.user_info?.fullName || currentUser?.fullName || 'You')}&background=14b8a6&color=fff&size=150`
-                      } 
-                      alt="Your story"
-                    />
+                    {currentUser?.profile_info?.avatar || currentUser?.avatar ? (
+                      <StoryImage
+                        src={currentUser?.profile_info?.avatar
+                          ? (currentUser.profile_info.avatar.startsWith('http')
+                              ? currentUser.profile_info.avatar
+                              : `${API_BASE}${currentUser.profile_info.avatar}`)
+                          : currentUser?.avatar && (currentUser.avatar.startsWith('http')
+                              ? currentUser.avatar
+                              : `${API_BASE}${currentUser.avatar}`)
+                        }
+                        alt="Your story"
+                      />
+                    ) : (
+                      <Avatar
+                        name={currentUser?.user_info?.fullName || currentUser?.fullName || 'You'}
+                        alt="Your story"
+                        size={64}
+                      />
+                    )}
                     {}
                     <div
                       onClick={(e) => {
@@ -181,37 +188,41 @@ const Stories = () => {
           {}
           {stories
             .filter(storyGroup => {
-              const isCurrentUser = storyGroup.author._id === currentUser?._id
+              const isCurrentUser = storyGroup?.author?._id === currentUser?._id
               console.log('Filter check:', { 
-                authorId: storyGroup.author._id, 
+                authorId: storyGroup?.author?._id, 
                 currentUserId: currentUser?._id, 
                 isCurrentUser,
-                authorName: storyGroup.author.user_info?.fullName || storyGroup.author.fullName
+                authorName: storyGroup?.author?.user_info?.fullName || storyGroup?.author?.fullName
               })
               return !isCurrentUser
             })
             .map((storyGroup) => (
               <StoryCircle 
-                key={storyGroup.author._id} 
+                key={storyGroup?.author?._id} 
                 onClick={() => handleStoryClick(storyGroup)}
               >
-                <StoryRing $hasViewed={storyGroup.stories.every(s => s.hasViewed)}>
-                  <StoryImage 
-                    src={
-                      storyGroup.author.profile_info?.avatar 
-                        ? (storyGroup.author.profile_info.avatar.startsWith('http') 
-                            ? storyGroup.author.profile_info.avatar 
-                            : `http://localhost:5000${storyGroup.author.profile_info.avatar}`)
-                        : storyGroup.author.avatar
-                        ? (storyGroup.author.avatar.startsWith('http') 
-                            ? storyGroup.author.avatar 
-                            : `http://localhost:5000${storyGroup.author.avatar}`)
-                        : `https://ui-avatars.com/api/?name=${encodeURIComponent(storyGroup.author.user_info?.fullName || storyGroup.author.fullName)}&background=14b8a6&color=fff&size=150`
-                    } 
-                    alt={storyGroup.author.user_info?.fullName || storyGroup.author.fullName}
-                  />
+                <StoryRing $hasViewed={storyGroup?.stories?.every(s => s.hasViewed)}>
+                  {storyGroup?.author?.profile_info?.avatar || storyGroup?.author?.avatar ? (
+                    <StoryImage
+                      src={storyGroup?.author?.profile_info?.avatar
+                        ? (storyGroup.author.profile_info.avatar.startsWith('http')
+                            ? storyGroup.author.profile_info.avatar
+                            : `${API_BASE}${storyGroup.author.profile_info.avatar}`)
+                        : storyGroup?.author?.avatar && (storyGroup.author.avatar.startsWith('http')
+                            ? storyGroup.author.avatar
+                            : `${API_BASE}${storyGroup.author.avatar}`)}
+                      alt={storyGroup?.author?.user_info?.fullName || storyGroup?.author?.fullName}
+                    />
+                  ) : (
+                    <Avatar
+                      name={storyGroup?.author?.user_info?.fullName || storyGroup?.author?.fullName || 'User'}
+                      alt={storyGroup?.author?.user_info?.fullName || storyGroup?.author?.fullName}
+                      size={64}
+                    />
+                  )}
                 </StoryRing>
-                <StoryName>{storyGroup.author.user_info?.fullName || storyGroup.author.fullName}</StoryName>
+                <StoryName>{storyGroup?.author?.user_info?.fullName || storyGroup?.author?.fullName}</StoryName>
               </StoryCircle>
             ))}
         </StoriesScroll>
@@ -270,3 +281,4 @@ const Stories = () => {
   )
 }
 export default Stories
+

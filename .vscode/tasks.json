@@ -1,19 +1,35 @@
 {
-	"version": "2.0.0",
-	"tasks": [
-		{
-			"label": "Run Backend",
-			"type": "shell",
-			"command": "cd backend && npm run dev",
-			"isBackground": true,
-			"problemMatcher": []
-		},
-		{
-			"label": "Run Frontend",
-			"type": "shell",
-			"command": "cd Verity_FYP && npm run dev",
-			"isBackground": true,
-			"problemMatcher": []
-		}
-	]
+    "version": "2.0.0",
+    "tasks": [
+        {
+            "label": "Run Backend",
+            "type": "shell",
+            "command": "npm run dev",
+            "options": {
+                "cwd": "${workspaceFolder}/backend"
+            },
+            "isBackground": true,
+            "problemMatcher": []
+        },
+        {
+            "label": "Run Frontend",
+            "type": "shell",
+            "command": "npm run dev",
+            "options": {
+                "cwd": "${workspaceFolder}/Verity_FYP"
+            },
+            "isBackground": true,
+            "problemMatcher": []
+        },
+        {
+            "label": "Run Both",
+            "dependsOn": ["Run Backend", "Run Frontend"],
+            "dependsOrder": "parallel",
+            "group": {
+                "kind": "build",
+                "isDefault": true
+            },
+            "problemMatcher": []
+        }
+    ]
 }

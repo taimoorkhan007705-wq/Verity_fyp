@@ -1,0 +1,552 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Verity - Setup Test Accounts</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+        .container {
+            background: white;
+            border-radius: 16px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            max-width: 800px;
+            width: 100%;
+            padding: 40px;
+        }
+        h1 {
+            color: #667eea;
+            margin-bottom: 10px;
+            text-align: center;
+        }
+        .subtitle {
+            color: #666;
+            text-align: center;
+            margin-bottom: 30px;
+            font-size: 14px;
+        }
+        .steps {
+            display: flex;
+            gap: 15px;
+            margin-bottom: 40px;
+            justify-content: center;
+            flex-wrap: wrap;
+        }
+        .step-badge {
+            background: #f0f0f0;
+            border-radius: 20px;
+            padding: 10px 20px;
+            font-size: 14px;
+            color: #666;
+            transition: all 0.3s;
+        }
+        .step-badge.active {
+            background: #667eea;
+            color: white;
+            font-weight: bold;
+        }
+        .step-badge.done {
+            background: #4caf50;
+            color: white;
+        }
+        .form-section {
+            background: #f9f9f9;
+            border-radius: 12px;
+            padding: 30px;
+            margin-bottom: 20px;
+        }
+        .form-section h2 {
+            color: #333;
+            margin-bottom: 20px;
+            font-size: 20px;
+        }
+        .form-group {
+            margin-bottom: 15px;
+        }
+        label {
+            display: block;
+            margin-bottom: 5px;
+            color: #333;
+            font-weight: 500;
+            font-size: 14px;
+        }
+        input, select {
+            width: 100%;
+            padding: 12px;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            font-size: 14px;
+            transition: border-color 0.3s;
+        }
+        input:focus, select:focus {
+            outline: none;
+            border-color: #667eea;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+        }
+        .button-group {
+            display: flex;
+            gap: 10px;
+            margin-top: 20px;
+        }
+        button {
+            flex: 1;
+            padding: 12px 20px;
+            border: none;
+            border-radius: 8px;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+        .btn-primary {
+            background: #667eea;
+            color: white;
+        }
+        .btn-primary:hover {
+            background: #5568d3;
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px rgba(102, 126, 234, 0.3);
+        }
+        .btn-primary:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+            transform: none;
+        }
+        .btn-secondary {
+            background: #f0f0f0;
+            color: #333;
+        }
+        .btn-secondary:hover {
+            background: #e0e0e0;
+        }
+        .loading {
+            display: inline-block;
+            width: 16px;
+            height: 16px;
+            border: 2px solid #f3f3f3;
+            border-top: 2px solid #667eea;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin-right: 8px;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        .success-message {
+            background: #e8f5e9;
+            color: #2e7d32;
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            border-left: 4px solid #4caf50;
+        }
+        .error-message {
+            background: #ffebee;
+            color: #c62828;
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            border-left: 4px solid #f44336;
+        }
+        .accounts-list {
+            background: #f9f9f9;
+            border-radius: 12px;
+            padding: 20px;
+            margin-bottom: 20px;
+        }
+        .account-item {
+            background: white;
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 10px;
+            border-left: 4px solid #667eea;
+        }
+        .account-item strong {
+            display: block;
+            color: #333;
+            margin-bottom: 5px;
+        }
+        .account-item small {
+            display: block;
+            color: #666;
+            font-size: 12px;
+            margin: 3px 0;
+        }
+        .copy-url {
+            background: white;
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 10px;
+            border: 1px solid #ddd;
+            word-break: break-all;
+            font-family: monospace;
+            font-size: 12px;
+            cursor: pointer;
+            transition: background 0.3s;
+        }
+        .copy-url:hover {
+            background: #f0f0f0;
+        }
+        .next-steps {
+            background: #e3f2fd;
+            border: 1px solid #90caf9;
+            border-radius: 8px;
+            padding: 20px;
+            margin-top: 20px;
+        }
+        .next-steps h3 {
+            color: #1976d2;
+            margin-bottom: 10px;
+        }
+        .next-steps ol {
+            margin-left: 20px;
+            color: #333;
+        }
+        .next-steps li {
+            margin-bottom: 8px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🚀 Verity Setup Wizard</h1>
+        <p class="subtitle">Create test accounts and verify the reviewer system</p>
+        
+        <div id="content"></div>
+    </div>
+
+    <script>
+        const API_URL = 'http://localhost:5000/api';
+        let accounts = {
+            reviewers: [],
+            user: null
+        };
+
+        const app = {
+            init() {
+                this.render('step1');
+            },
+            
+            render(step) {
+                const content = document.getElementById('content');
+                
+                switch(step) {
+                    case 'step1':
+                        content.innerHTML = this.step1Template();
+                        document.querySelector('.btn-primary').addEventListener('click', () => this.render('step2'));
+                        break;
+                    case 'step2':
+                        content.innerHTML = this.step2Template();
+                        this.setupReviewerForm(1, 'Alice Reviewer', 'alice@reviewer.com');
+                        document.querySelectorAll('.btn-next-reviewer').forEach((btn, i) => {
+                            btn.addEventListener('click', () => this.createReviewer(i));
+                        });
+                        break;
+                    case 'step3':
+                        content.innerHTML = this.step3Template();
+                        this.setupUserForm();
+                        document.querySelector('.btn-create-user').addEventListener('click', () => this.createUser());
+                        document.querySelector('.btn-skip-user').addEventListener('click', () => this.render('step4'));
+                        break;
+                    case 'step4':
+                        content.innerHTML = this.step4Template();
+                        document.querySelector('.btn-open-profiles').addEventListener('click', () => this.openProfiles());
+                        break;
+                }
+            },
+            
+            step1Template() {
+                return `
+                    <div class="form-section">
+                        <h2>📋 Welcome to Setup Wizard</h2>
+                        <p style="color: #666; line-height: 1.6; margin-bottom: 20px;">
+                            This wizard will help you:
+                            <br>✅ Create 3 test reviewers
+                            <br>✅ Create 1 test user
+                            <br>✅ Open all profiles in your browser
+                            <br>✅ Test the reviewer system
+                        </p>
+                        <div class="button-group">
+                            <button class="btn-primary">Start Setup →</button>
+                        </div>
+                    </div>
+                `;
+            },
+            
+            step2Template() {
+                return `
+                    <div class="steps">
+                        <div class="step-badge active">1. Create Reviewers</div>
+                        <div class="step-badge">2. Create User</div>
+                        <div class="step-badge">3. Open Profiles</div>
+                    </div>
+                    <div class="form-section">
+                        <h2>👥 Create 3 Test Reviewers</h2>
+                        <div id="reviewers-form"></div>
+                    </div>
+                `;
+            },
+            
+            step3Template() {
+                return `
+                    <div class="steps">
+                        <div class="step-badge done">1. Create Reviewers</div>
+                        <div class="step-badge active">2. Create User</div>
+                        <div class="step-badge">3. Open Profiles</div>
+                    </div>
+                    <div class="form-section">
+                        <h2>👤 Create Test User</h2>
+                        <div id="user-form"></div>
+                    </div>
+                `;
+            },
+            
+            step4Template() {
+                return `
+                    <div class="steps">
+                        <div class="step-badge done">1. Create Reviewers</div>
+                        <div class="step-badge done">2. Create User</div>
+                        <div class="step-badge active">3. Open Profiles</div>
+                    </div>
+                    <div class="form-section">
+                        <h2>📱 Open All Profiles</h2>
+                        <p style="color: #666; margin-bottom: 20px;">
+                            Click the button below to open all profiles in separate browser tabs.
+                        </p>
+                        <div class="accounts-list">
+                            ${this.renderAccounts()}
+                        </div>
+                        <div class="button-group">
+                            <button class="btn-primary btn-open-profiles">Open All Profiles in New Tabs</button>
+                        </div>
+                        <div class="next-steps">
+                            <h3>🎯 Next Steps</h3>
+                            <ol>
+                                <li>Login as Test User</li>
+                                <li>Create a post with suspicious content (e.g., "FREE MONEY!!!")</li>
+                                <li>Wait 5-10 seconds for AI to process</li>
+                                <li>Go to each Reviewer profile tab - they should see the post in their queue</li>
+                                <li>Reviewers vote (need 2 votes to approve)</li>
+                                <li>Post status changes to Approved or Rejected</li>
+                            </ol>
+                        </div>
+                    </div>
+                `;
+            },
+            
+            setupReviewerForm(index, name, email) {
+                const reviewersList = [
+                    { name: 'Alice Reviewer', email: 'alice@reviewer.com' },
+                    { name: 'Bob Reviewer', email: 'bob@reviewer.com' },
+                    { name: 'Charlie Reviewer', email: 'charlie@reviewer.com' }
+                ];
+                
+                let html = '';
+                reviewersList.forEach((r, i) => {
+                    html += `
+                        <div class="form-group">
+                            <strong>Reviewer ${i+1}: ${r.name}</strong>
+                            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 10px;">
+                                <input type="text" value="${r.name}" readonly disabled style="background: #f0f0f0;">
+                                <input type="email" value="${r.email}" readonly disabled style="background: #f0f0f0;">
+                            </div>
+                            <button class="btn-primary btn-next-reviewer" style="margin-top: 10px; width: 100%;">Create Reviewer ${i+1}</button>
+                            <div id="status-${i}" style="margin-top: 10px;"></div>
+                        </div>
+                    `;
+                });
+                
+                document.getElementById('reviewers-form').innerHTML = html;
+            },
+            
+            async createReviewer(index) {
+                const names = ['Alice', 'Bob', 'Charlie'];
+                const fullNames = ['Alice Reviewer', 'Bob Reviewer', 'Charlie Reviewer'];
+                const emails = ['alice@reviewer.com', 'bob@reviewer.com', 'charlie@reviewer.com'];
+                
+                const btn = document.querySelectorAll('.btn-next-reviewer')[index];
+                const statusDiv = document.getElementById(`status-${index}`);
+                
+                btn.disabled = true;
+                btn.innerHTML = '<span class="loading"></span>Creating...';
+                
+                try {
+                    const response = await fetch(`${API_URL}/auth/signup`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            fullName: fullNames[index],
+                            email: emails[index],
+                            password: 'Reviewer123',
+                            role: 'Reviewer'
+                        })
+                    });
+                    
+                    const data = await response.json();
+                    
+                    if (data.success) {
+                        accounts.reviewers[index] = {
+                            name: fullNames[index],
+                            email: emails[index],
+                            id: data.user.id,
+                            token: data.token
+                        };
+                        
+                        statusDiv.innerHTML = `
+                            <div class="success-message">
+                                ✅ ${fullNames[index]} created successfully!<br>
+                                <small>ID: ${data.user.id}</small>
+                            </div>
+                        `;
+                        btn.innerHTML = '✅ Created';
+                        btn.style.background = '#4caf50';
+                        
+                        // Check if all reviewers created
+                        if (accounts.reviewers.length === 3) {
+                            setTimeout(() => this.render('step3'), 1000);
+                        }
+                    } else {
+                        statusDiv.innerHTML = `<div class="error-message">Error: ${data.message}</div>`;
+                        btn.disabled = false;
+                        btn.innerHTML = 'Try Again';
+                    }
+                } catch (error) {
+                    statusDiv.innerHTML = `<div class="error-message">Error: ${error.message}</div>`;
+                    btn.disabled = false;
+                    btn.innerHTML = 'Try Again';
+                }
+            },
+            
+            setupUserForm() {
+                document.getElementById('user-form').innerHTML = `
+                    <div class="form-group">
+                        <strong>Test User</strong>
+                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 10px;">
+                            <input type="text" value="Test User" readonly disabled style="background: #f0f0f0;">
+                            <input type="email" value="testuser@test.com" readonly disabled style="background: #f0f0f0;">
+                        </div>
+                        <div style="display: flex; gap: 10px; margin-top: 10px;">
+                            <button class="btn-primary btn-create-user" style="flex: 1;">Create User</button>
+                            <button class="btn-secondary btn-skip-user" style="flex: 1;">Skip</button>
+                        </div>
+                        <div id="user-status" style="margin-top: 10px;"></div>
+                    </div>
+                `;
+            },
+            
+            async createUser() {
+                const btn = document.querySelector('.btn-create-user');
+                const statusDiv = document.getElementById('user-status');
+                
+                btn.disabled = true;
+                btn.innerHTML = '<span class="loading"></span>Creating...';
+                
+                try {
+                    const response = await fetch(`${API_URL}/auth/signup`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            fullName: 'Test User',
+                            email: 'testuser@test.com',
+                            password: 'User123',
+                            role: 'User'
+                        })
+                    });
+                    
+                    const data = await response.json();
+                    
+                    if (data.success) {
+                        accounts.user = {
+                            name: 'Test User',
+                            email: 'testuser@test.com',
+                            id: data.user.id,
+                            token: data.token
+                        };
+                        
+                        statusDiv.innerHTML = `
+                            <div class="success-message">
+                                ✅ Test User created successfully!<br>
+                                <small>ID: ${data.user.id}</small>
+                            </div>
+                        `;
+                        btn.innerHTML = '✅ Created';
+                        btn.style.background = '#4caf50';
+                        
+                        setTimeout(() => this.render('step4'), 1000);
+                    } else {
+                        statusDiv.innerHTML = `<div class="error-message">Error: ${data.message}</div>`;
+                        btn.disabled = false;
+                        btn.innerHTML = 'Try Again';
+                    }
+                } catch (error) {
+                    statusDiv.innerHTML = `<div class="error-message">Error: ${error.message}</div>`;
+                    btn.disabled = false;
+                    btn.innerHTML = 'Try Again';
+                }
+            },
+            
+            renderAccounts() {
+                let html = '';
+                
+                accounts.reviewers.forEach((r, i) => {
+                    html += `
+                        <div class="account-item">
+                            <strong>👥 ${r.name}</strong>
+                            <small>Email: ${r.email}</small>
+                            <small>ID: ${r.id}</small>
+                            <div class="copy-url" onclick="navigator.clipboard.writeText('http://localhost:3000/profile/${r.id}')">
+                                http://localhost:3000/profile/${r.id}
+                            </div>
+                        </div>
+                    `;
+                });
+                
+                if (accounts.user) {
+                    html += `
+                        <div class="account-item" style="border-left-color: #ff9800;">
+                            <strong>👤 ${accounts.user.name}</strong>
+                            <small>Email: ${accounts.user.email}</small>
+                            <small>ID: ${accounts.user.id}</small>
+                            <div class="copy-url" onclick="navigator.clipboard.writeText('http://localhost:3000/profile/${accounts.user.id}')">
+                                http://localhost:3000/profile/${accounts.user.id}
+                            </div>
+                        </div>
+                    `;
+                }
+                
+                return html;
+            },
+            
+            openProfiles() {
+                accounts.reviewers.forEach((r, i) => {
+                    setTimeout(() => {
+                        window.open(`http://localhost:3000/profile/${r.id}`, `reviewer-${i}`);
+                    }, i * 300);
+                });
+                
+                if (accounts.user) {
+                    setTimeout(() => {
+                        window.open(`http://localhost:3000/profile/${accounts.user.id}`, 'test-user');
+                    }, accounts.reviewers.length * 300);
+                }
+            }
+        };
+        
+        app.init();
+    </script>
+</body>
+</html>

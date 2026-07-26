@@ -1,7 +1,10 @@
+import { API_BASE, API_URL, mediaUrl } from '../../config.js'
 import { useState, useEffect } from 'react'
 import { XCircle, AlertTriangle, Trash2, ImageOff } from 'lucide-react'
+import { useBadges } from '../../contexts/BadgeContext'
+import { useToast } from '../../contexts/ToastContext'
 
-const API = 'http://localhost:5000/api'
+const API = `${API_URL}`
 const token = () => localStorage.getItem('token')
 
 const formatTime = (ts) => {
@@ -15,22 +18,31 @@ const formatTime = (ts) => {
 export default function RejectedPosts() {
   const [posts, setPosts] = useState([])
   const [loading, setLoading] = useState(true)
+  const { markRejectionsVisited } = useBadges()
+  const toast = useToast()
 
   useEffect(() => {
+    // Mark rejections as visited when component mounts
+    markRejectionsVisited()
+    
     fetch(`${API}/posts/my/rejected`, {
       headers: { Authorization: `Bearer ${token()}` }
     })
       .then(r => r.json())
       .then(d => { if (d.success) setPosts(d.posts) })
       .finally(() => setLoading(false))
-  }, [])
+  }, [markRejectionsVisited])
 
   const deletePost = async (id) => {
-    if (!confirm('Remove this post from your rejected list?')) return
     const r = await fetch(`${API}/posts/${id}`, {
       method: 'DELETE', headers: { Authorization: `Bearer ${token()}` }
     }).then(r => r.json())
-    if (r.success) setPosts(prev => prev.filter(p => p._id !== id))
+    if (r.success) {
+      setPosts(prev => prev.filter(p => p._id !== id))
+      toast.success('Post removed from rejected list')
+    } else {
+      toast.error('Failed to remove post')
+    }
   }
 
   return (
@@ -63,7 +75,7 @@ export default function RejectedPosts() {
               boxShadow: '0 2px 12px rgba(0,0,0,0.06)',
               border: '1px solid #fee2e2'
             }}>
-              {/* Red top bar */}
+              {}
               <div style={{ backgroundColor: '#ef4444', padding: '8px 16px', display: 'flex', alignItems: 'center', gap: 8 }}>
                 <AlertTriangle size={15} color="white" />
                 <span style={{ color: 'white', fontWeight: 700, fontSize: '0.82rem' }}>Post Rejected</span>
@@ -71,7 +83,7 @@ export default function RejectedPosts() {
               </div>
 
               <div style={{ padding: '1.25rem' }}>
-                {/* Reason box */}
+                {}
                 <div style={{ backgroundColor: '#fff7f7', border: '1px solid #fecaca', borderRadius: 10, padding: '0.75rem 1rem', marginBottom: '1rem', display: 'flex', gap: '0.5rem' }}>
                   <AlertTriangle size={16} color="#ef4444" style={{ flexShrink: 0, marginTop: 2 }} />
                   <div>
@@ -82,21 +94,21 @@ export default function RejectedPosts() {
                   </div>
                 </div>
 
-                {/* Post content */}
+                {}
                 {post.content && (
                   <p style={{ color: '#374151', fontSize: '0.9rem', lineHeight: 1.6, marginBottom: '0.75rem' }}>
                     {post.content}
                   </p>
                 )}
 
-                {/* Media thumbnails */}
+                {}
                 {post.media?.length > 0 && (
                   <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '0.75rem', flexWrap: 'wrap' }}>
                     {post.media.map((item, idx) => (
                       item.type === 'image' ? (
                         <img
                           key={idx}
-                          src={`http://localhost:5000${item.url}`}
+                          src={mediaUrl(item.url)}
                           alt="rejected media"
                           style={{ width: 80, height: 80, borderRadius: 8, objectFit: 'cover', border: '2px solid #fecaca', filter: 'grayscale(30%)' }}
                         />
@@ -109,7 +121,7 @@ export default function RejectedPosts() {
                   </div>
                 )}
 
-                {/* Actions */}
+                {}
                 <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
                   <button onClick={() => deletePost(post._id)} style={{
                     display: 'flex', alignItems: 'center', gap: 6, padding: '7px 14px',
@@ -127,3 +139,4 @@ export default function RejectedPosts() {
     </div>
   )
 }
+

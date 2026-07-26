@@ -7,7 +7,8 @@
     "dev": "vite",
     "build": "vite build",
     "lint": "eslint .",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "tunnel": "node server-tunnel.js"
   },
   "dependencies": {
     "emoji-picker-react": "^4.18.0",
@@ -15,6 +16,7 @@
     "lucide-react": "^0.563.0",
     "react": "^19.2.0",
     "react-dom": "^19.2.0",
+    "react-easy-crop": "^6.2.3",
     "react-icons": "^5.5.0",
     "react-router-dom": "^7.13.0",
     "styled-components": "^6.3.9"

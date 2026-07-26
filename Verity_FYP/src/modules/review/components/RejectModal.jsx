@@ -42,3 +42,4 @@ function RejectModal({ isOpen, onClose, onSubmit, reason, setReason, notes, setN
   )
 }
 export default RejectModal
+

@@ -1,13 +1,14 @@
+import { API_BASE, API_URL, mediaUrl } from '../../config.js'
 import { useState, useEffect } from 'react'
 import { X, ChevronLeft, ChevronRight, Eye } from 'lucide-react'
 import { viewStory } from '../../services/api'
+import Avatar from '../../components/Avatar/Avatar'
 import {
   ViewerContainer,
   ViewerOverlay,
   ViewerContent,
   ViewerHeader,
   AuthorInfo,
-  AuthorAvatar,
   AuthorName,
   TimeAgo,
   CloseBtn,
@@ -83,15 +84,11 @@ const StoryViewer = ({ storyGroup, onClose }) => {
         </ProgressBar>
         <ViewerHeader>
           <AuthorInfo>
-            <AuthorAvatar 
-              src={
-                storyGroup.author.avatar 
-                  ? (storyGroup.author.avatar.startsWith('http') 
-                      ? storyGroup.author.avatar 
-                      : `http://localhost:5000${storyGroup.author.avatar}`)
-                  : `https://ui-avatars.com/api/?name=${encodeURIComponent(storyGroup.author.fullName)}&background=14b8a6&color=fff&size=150`
-              }
+            <Avatar
+              src={mediaUrl(storyGroup.author.avatar)}
+              name={storyGroup.author.fullName}
               alt={storyGroup.author.fullName}
+              size={48}
             />
             <div>
               <AuthorName>{storyGroup.author.fullName}</AuthorName>
@@ -105,12 +102,12 @@ const StoryViewer = ({ storyGroup, onClose }) => {
         <StoryMedia>
           {currentStory.mediaType === 'image' ? (
             <StoryImage 
-              src={`http://localhost:5000${currentStory.mediaUrl}`}
+              src={mediaUrl(currentStory.mediaUrl)}
               alt="Story"
             />
           ) : (
             <StoryVideo 
-              src={`http://localhost:5000${currentStory.mediaUrl}`}
+              src={mediaUrl(currentStory.mediaUrl)}
               autoPlay
               muted
               loop
@@ -139,3 +136,4 @@ const StoryViewer = ({ storyGroup, onClose }) => {
   )
 }
 export default StoryViewer
+

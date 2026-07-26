@@ -39,12 +39,7 @@ const storySchema = new mongoose.Schema({
   },
   expiresAt: {
     type: Date,
-    required: true,
-    index: true
-  },
-  createdAt: {
-    type: Date,
-    default: Date.now
+    required: true
   }
 }, {
   timestamps: true
@@ -58,3 +53,4 @@ storySchema.pre('save', function(next) {
 })
 const Story = mongoose.model('Story', storySchema)
 export default Story
+

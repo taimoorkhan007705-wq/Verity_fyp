@@ -151,6 +151,16 @@ const userSchema = new mongoose.Schema({
 }, {
   timestamps: true
 });
+userSchema.add({
+  resetToken: {
+    type: String,
+    default: undefined
+  },
+  resetTokenExpiry: {
+    type: Date,
+    default: undefined
+  }
+});
 userSchema.pre('save', async function(next) {
   if (this.isModified('user_info.fullName') && this.user_info.fullName) {
     const nameParts = this.user_info.fullName.trim().split(/\s+/)
@@ -176,3 +186,4 @@ userSchema.set('toJSON', {
 });
 const User = mongoose.model('User', userSchema);
 export default User;
+

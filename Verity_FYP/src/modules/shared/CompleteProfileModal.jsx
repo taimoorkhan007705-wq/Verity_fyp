@@ -72,3 +72,4 @@ export default function CompleteProfileModal({ onClose }) {
     </div>
   )
 }
+

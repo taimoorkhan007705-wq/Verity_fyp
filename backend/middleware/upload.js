@@ -101,3 +101,4 @@ export const uploadProduct = multer({
   limits: { fileSize: 10 * 1024 * 1024 }, // 10MB limit per image
   fileFilter: fileFilter
 }).array('images', 5) // Max 5 images per product
+

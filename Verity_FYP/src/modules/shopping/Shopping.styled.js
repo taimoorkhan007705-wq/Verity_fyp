@@ -84,6 +84,19 @@ export const ProductsGrid = styled.div`
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
   gap: 1rem;
+
+  @media (max-width: 900px) {
+    grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+  }
+
+  @media (max-width: 640px) {
+    grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+    gap: 0.75rem;
+  }
+
+  @media (max-width: 480px) {
+    grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+  }
 `
 export const ProductCard = styled.div`
   background: white;
@@ -96,12 +109,30 @@ export const ProductCard = styled.div`
     transform: translateY(-2px);
     box-shadow: 0 4px 12px rgba(0, 0, 0, 0.12);
   }
+  @media (max-width: 640px) {
+    border-radius: 10px;
+  }
+  @media (max-width: 480px) {
+    border-radius: 8px;
+  }
 `
 export const ProductImage = styled.img`
   width: 100%;
   height: 200px;
   object-fit: cover;
   background: #f3f4f6;
+
+  @media (max-width: 900px) {
+    height: 180px;
+  }
+
+  @media (max-width: 640px) {
+    height: 150px;
+  }
+
+  @media (max-width: 480px) {
+    height: 130px;
+  }
 `
 export const ProductInfo = styled.div`
   padding: 0.875rem;
@@ -163,6 +194,9 @@ export const StatItem = styled.div`
 export const ProductActions = styled.div`
   display: flex;
   gap: 0.5rem;
+  @media (max-width: 640px) {
+    flex-direction: column;
+  }
 `
 export const LikeButton = styled.button`
   flex: 1;

@@ -181,3 +181,4 @@ businessSchema.set('toJSON', {
 });
 const Business = mongoose.model('Business', businessSchema);
 export default Business;
+

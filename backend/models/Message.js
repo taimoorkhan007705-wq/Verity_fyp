@@ -58,3 +58,4 @@ messageSchema.index({ conversationId: 1, createdAt: -1 })
 messageSchema.index({ receiver: 1, isRead: 1 })
 const Message = mongoose.model('Message', messageSchema)
 export default Message
+

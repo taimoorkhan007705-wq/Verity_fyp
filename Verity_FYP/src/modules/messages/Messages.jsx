@@ -1,23 +1,22 @@
+import { API_BASE, API_URL } from '../../config.js'
 import { useState, useEffect, useRef } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { Send, MessageCircle, ArrowLeft } from 'lucide-react'
 import { getCurrentUser } from '../../services/api'
+import { useBadges } from '../../contexts/BadgeContext'
+import Avatar from '../../components/Avatar/Avatar'
 import CompleteProfileModal from '../shared/CompleteProfileModal'
 import useProfileGuard from '../../utils/useProfileGuard'
 
-const API = 'http://localhost:5000/api'
+const API = `${API_URL}`
 const token = () => localStorage.getItem('token')
-
-const avatarUrl = (user) =>
-  user?.avatar?.startsWith('/uploads')
-    ? `http://localhost:5000${user.avatar}`
-    : `https://ui-avatars.com/api/?name=${encodeURIComponent(user?.fullName || 'User')}&background=14b8a6&color=fff&size=150`
 
 export default function Messages() {
   const { userId } = useParams()
   const navigate = useNavigate()
   const currentUser = getCurrentUser()
   const { guard, showModal, closeModal } = useProfileGuard()
+  const { refreshBadges } = useBadges()
   const [conversations, setConversations] = useState([])
   const [messages, setMessages] = useState([])
   const [otherUser, setOtherUser] = useState(null)
@@ -32,14 +31,6 @@ export default function Messages() {
       .finally(() => setLoadingConvs(false))
   }, [])
 
-  useEffect(() => {
-    if (!userId) return
-    fetch(`${API}/users/profiles/${userId}`, { headers: { Authorization: `Bearer ${token()}` } })
-      .then(r => r.json())
-      .then(d => { if (d.success) setOtherUser(d.user) })
-    loadMessages()
-  }, [userId])
-
   const loadMessages = () => {
     if (!userId) return
     fetch(`${API}/users/messages/${userId}`, { headers: { Authorization: `Bearer ${token()}` } })
@@ -48,6 +39,16 @@ export default function Messages() {
   }
 
   useEffect(() => {
+    if (!userId) return
+    fetch(`${API}/users/profiles/${userId}`, { headers: { Authorization: `Bearer ${token()}` } })
+      .then(r => r.json())
+      .then(d => { if (d.success) setOtherUser(d.user) })
+    loadMessages()
+    // Refresh badges when viewing a conversation to update unread count
+    refreshBadges()
+  }, [userId, refreshBadges])
+
+useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: 'smooth' })
   }, [messages])
 
@@ -77,7 +78,7 @@ export default function Messages() {
 
   return (
     <div style={{ display: 'flex', height: 'calc(100vh - 40px)', margin: '20px', gap: '1rem' }}>
-      {/* Conversation list */}
+      {}
       <div style={{ width: 300, minWidth: 300, background: 'white', borderRadius: 20, overflow: 'hidden', display: 'flex', flexDirection: 'column', boxShadow: '0 2px 12px rgba(0,0,0,0.06)' }}>
         <div style={{ padding: '1.25rem 1.5rem', borderBottom: '1px solid #f1f5f9', fontWeight: 900, fontSize: '1.1rem' }}>Messages</div>
         <div style={{ flex: 1, overflowY: 'auto' }}>
@@ -101,7 +102,12 @@ export default function Messages() {
               onMouseEnter={e => { if (userId !== conv.other.id) e.currentTarget.style.backgroundColor = '#f8fafc' }}
               onMouseLeave={e => { if (userId !== conv.other.id) e.currentTarget.style.backgroundColor = 'white' }}
             >
-              <img src={avatarUrl(conv.other)} alt={conv.other.fullName} style={{ width: 44, height: 44, borderRadius: '50%', objectFit: 'cover', border: '2px solid #14b8a6' }} />
+              <Avatar
+                src={conv.other?.avatar?.startsWith('/uploads') ? `${API_BASE}${conv.other.avatar}` : conv.other?.avatar}
+                name={conv.other.fullName}
+                alt={conv.other.fullName}
+                size={44}
+              />
               <div style={{ flex: 1, minWidth: 0 }}>
                 <div style={{ fontWeight: 700, fontSize: '0.9rem', color: '#0f172a' }}>{conv.other.fullName}</div>
                 <div style={{ fontSize: '0.78rem', color: '#94a3b8', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
@@ -113,7 +119,7 @@ export default function Messages() {
         </div>
       </div>
 
-      {/* Chat area */}
+      {}
       <div style={{ flex: 1, background: 'white', borderRadius: 20, display: 'flex', flexDirection: 'column', overflow: 'hidden', boxShadow: '0 2px 12px rgba(0,0,0,0.06)' }}>
         {!userId ? (
           <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', color: '#94a3b8' }}>
@@ -123,14 +129,19 @@ export default function Messages() {
           </div>
         ) : (
           <>
-            {/* Header */}
+            {}
             <div style={{ padding: '1rem 1.5rem', borderBottom: '1px solid #f1f5f9', display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
               <button onClick={() => navigate('/messages')} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#64748b', display: 'flex' }}>
                 <ArrowLeft size={20} />
               </button>
               {otherUser && (
                 <>
-                  <img src={avatarUrl(otherUser)} alt={otherUser.fullName} style={{ width: 40, height: 40, borderRadius: '50%', objectFit: 'cover', border: '2px solid #14b8a6' }} />
+                  <Avatar
+                    src={otherUser?.avatar?.startsWith('/uploads') ? `${API_BASE}${otherUser.avatar}` : otherUser?.avatar}
+                    name={otherUser.fullName}
+                    alt={otherUser.fullName}
+                    size={40}
+                  />
                   <div>
                     <div style={{ fontWeight: 800, fontSize: '0.95rem' }}>{otherUser.fullName}</div>
                     <div style={{ fontSize: '0.75rem', color: '#14b8a6', fontWeight: 600 }}>{otherUser.role}</div>
@@ -139,7 +150,7 @@ export default function Messages() {
               )}
             </div>
 
-            {/* Messages */}
+            {}
             <div style={{ flex: 1, overflowY: 'auto', padding: '1.25rem', display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
               {messages.map(msg => {
                 const isMine = msg.sender?.toString() === currentUser?.id?.toString()
@@ -160,7 +171,7 @@ export default function Messages() {
               <div ref={bottomRef} />
             </div>
 
-            {/* Input */}
+            {}
             <form onSubmit={sendMsg} style={{ padding: '1rem 1.5rem', borderTop: '1px solid #f1f5f9', display: 'flex', gap: '0.75rem' }}>
               <input
                 value={text}
@@ -179,3 +190,4 @@ export default function Messages() {
     </div>
   )
 }
+

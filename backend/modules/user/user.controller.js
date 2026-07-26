@@ -3,6 +3,8 @@ import Reviewer from '../../models/Reviewer.js'
 import Business from '../../models/Business.js'
 import Connection from '../../models/Connection.js'
 import Message from '../../models/Message.js'
+import Notification from '../../models/Notification.js'
+import Post from '../../models/Post.js'
 import fs from 'fs'
 import path from 'path'
 const getModelByRole = (role) => {
@@ -378,6 +380,18 @@ export const sendMessage = async (req, res) => {
       receiverModel: 'User',
       message: message.trim()
     })
+
+    await Notification.create({
+      user: otherId,
+      userModel: 'User',
+      type: 'message',
+      title: 'New Message',
+      message: message.trim().slice(0, 100),
+      relatedUser: senderId,
+      relatedUserModel: senderRole,
+      actionUrl: `/messages/${senderId}`
+    })
+
     res.json({ success: true, message: msg })
   } catch (error) {
     res.status(500).json({ success: false, message: error.message })
@@ -426,3 +440,98 @@ export const getConversations = async (req, res) => {
     res.status(500).json({ success: false, message: error.message })
   }
 }
+
+export const getBadgeCounts = async (req, res) => {
+  try {
+    const userId = req.user._id.toString()
+    const { feedSince } = req.query
+
+    const unreadMessages = await Message.countDocuments({
+      receiver: userId,
+      isRead: false,
+      isDeleted: false
+    })
+
+    const unreadRejections = await Notification.countDocuments({
+      user: userId,
+      type: 'post_rejected',
+      isRead: false
+    })
+
+    let newFeedAuthors = 0
+    if (feedSince) {
+      const sinceDate = new Date(feedSince)
+      if (!isNaN(sinceDate.getTime())) {
+        const connections = await Connection.find({
+          follower: userId,
+          status: 'active'
+        }).select('following')
+
+        const followingIds = connections.map(c => c.following.toString())
+        if (followingIds.length > 0) {
+          const authors = await Post.distinct('author', {
+            author: { $in: followingIds },
+            verificationStatus: 'approved',
+            createdAt: { $gt: sinceDate }
+          })
+          newFeedAuthors = authors.length
+        }
+      }
+    }
+
+    res.json({
+      success: true,
+      badges: { unreadMessages, unreadRejections, newFeedAuthors }
+    })
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message })
+  }
+}
+
+export const markRejectionsRead = async (req, res) => {
+  try {
+    const userId = req.user._id
+    await Notification.updateMany(
+      { user: userId, type: 'post_rejected', isRead: false },
+      { isRead: true, readAt: new Date() }
+    )
+    res.json({ success: true })
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message })
+  }
+}
+
+export const getRecentNotifications = async (req, res) => {
+  try {
+    const userId = req.user._id
+    const notifications = await Notification.find({
+      user: userId,
+      isRead: false,
+      type: { $in: ['post_approved', 'post_rejected', 'message'] }
+    })
+      .sort({ createdAt: -1 })
+      .limit(20)
+
+    res.json({ success: true, notifications })
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message })
+  }
+}
+
+export const markNotificationsRead = async (req, res) => {
+  try {
+    const userId = req.user._id
+    const { ids, type } = req.body
+
+    const query = { user: userId, isRead: false }
+    if (ids?.length) query._id = { $in: ids }
+    if (type) query.type = type
+
+    await Notification.updateMany(query, { isRead: true, readAt: new Date() })
+    res.json({ success: true })
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message })
+  }
+}
+
+

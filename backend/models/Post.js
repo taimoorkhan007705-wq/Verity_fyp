@@ -12,8 +12,21 @@ const postSchema = new mongoose.Schema({
   },
   content: {
     type: String,
-    required: true,
-    maxlength: 500
+    maxlength: 500,
+    default: '',
+    validate: [
+      {
+        validator: function(v) {
+          // Content is required only if there's no media
+          if (this.media && this.media.length > 0) {
+            return true // Media exists, content can be empty
+          }
+          // No media - content is required and must have some text
+          return v && v.trim().length > 0
+        },
+        message: 'Post must have either content or media'
+      }
+    ]
   },
   media: [{
     type: {
@@ -33,6 +46,19 @@ const postSchema = new mongoose.Schema({
     refPath: 'mentions.userModel'
   }],
   location: String,
+  category: {
+    type: String,
+    enum: ['Sports', 'News', 'Trending', 'Entertainment', 'Food', 'Other'],
+    default: 'Other'
+  },
+  categoryConfidence: {
+    type: Number,
+    default: 0
+  },
+  categoryReasoning: {
+    type: String,
+    default: ''
+  },
   visibility: {
     type: String,
     enum: ['public', 'private', 'connections'],
@@ -40,7 +66,7 @@ const postSchema = new mongoose.Schema({
   },
   verificationStatus: {
     type: String,
-    enum: ['pending', 'approved', 'rejected'],
+    enum: ['pending', 'approved', 'rejected', 'ai_rejected', 'awaiting_review'],
     default: 'pending'
   },
   isVerified: {
@@ -53,6 +79,77 @@ const postSchema = new mongoose.Schema({
   },
   reviewedAt: Date,
   reviewNotes: String,
+  // AI Detection Results
+  aiDetectionScore: {
+    type: Number,
+    default: 0,
+    min: 0,
+    max: 1
+  },
+  aiDetectionVerdict: {
+    type: String,
+    enum: ['safe', 'suspicious', 'fake', 'ai_generated'],
+    default: 'safe'
+  },
+  aiRejectionReason: {
+    type: String,
+    default: ''
+  },
+  // text extracted from image/video via OCR (shown to reviewers for context)
+  extractedText: {
+    type: String,
+    default: ''
+  },
+  // reason why AI flagged this post (shown to reviewers)
+  pendingReason: {
+    type: String,
+    default: ''
+  },
+  // Reviewer Voting System
+  reviewerVotes: [{
+    reviewer: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'Reviewer',
+      required: true
+    },
+    vote: {
+      type: String,
+      enum: ['approve', 'reject'],
+      required: true
+    },
+    votedAt: {
+      type: Date,
+      default: Date.now
+    },
+    reasoning: {
+      type: String,
+      default: ''
+    }
+  }],
+  assignedReviewers: [{
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'Reviewer'
+  }],
+  votingSummary: {
+    approveCount: {
+      type: Number,
+      default: 0
+    },
+    rejectCount: {
+      type: Number,
+      default: 0
+    },
+    totalVotes: {
+      type: Number,
+      default: 0
+    },
+    finalDecision: {
+      type: String,
+      enum: ['pending', 'approved', 'rejected'],
+      default: 'pending'
+    },
+    decidedAt: Date
+  },
   likes: [{
     user: {
       type: mongoose.Schema.Types.ObjectId,
@@ -158,3 +255,4 @@ const postSchema = new mongoose.Schema({
 })
 const Post = mongoose.model('Post', postSchema)
 export default Post
+

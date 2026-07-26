@@ -31,7 +31,10 @@ export const getPendingReviews = async (req, res) => {
         media: post.media.map(m => m.url),
         hashtags: post.hashtags,
         createdAt: post.createdAt,
-        verificationStatus: post.verificationStatus
+        verificationStatus: post.verificationStatus,
+        // show reviewers why AI flagged this + what text was extracted
+        pendingReason: post.pendingReason || null,
+        extractedText: post.extractedText || null
       })
       groupedPosts[authorId].totalPosts++
     })
@@ -133,3 +136,5 @@ export const getReviewHistory = async (req, res) => {
     res.status(500).json({ success: false, message: 'Failed to fetch history', error: error.message })
   }
 }
+
+

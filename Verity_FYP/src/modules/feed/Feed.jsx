@@ -1,26 +1,33 @@
+import { API_BASE, API_URL, mediaUrl } from '../../config.js'
 import { useState, useEffect, useRef } from 'react'
-import { Heart, MessageCircle, Share2, CheckCircle, Send, Trash2, Flag } from 'lucide-react'
+import { Heart, MessageCircle, Share2, CheckCircle, Send, Trash2, Flag, Image as ImageIcon } from 'lucide-react'
 import { getFeed } from '../../services/api'
+import { useBadges } from '../../contexts/BadgeContext'
+import { useToast } from '../../contexts/ToastContext'
+import { useNavigate } from 'react-router-dom'
+import Avatar from '../../components/Avatar/Avatar'
 import Stories from '../story/Stories'
 import CompleteProfileModal from '../shared/CompleteProfileModal'
 import useProfileGuard from '../../utils/useProfileGuard'
 import {
-  FeedContainer, PostCard, PostHeader, PostAvatar, PostUserInfo,
+  FeedContainer, PostCard, PostHeader, PostUserInfo,
   PostUserName, VerifiedBadge, PostUsername, PostTime, PostText,
   PostHashtag, PostImage, PostActions, ActionButton,
+  CategoryBar, CategoryTabs, CategoryTab,
+  CreatePostSection, CreatePostInput,
 } from './Feed.styled'
 
-const API = 'http://localhost:5000/api'
+const API = `${API_URL}`
 const token = () => localStorage.getItem('token')
 const currentUserId = () => { try { return JSON.parse(localStorage.getItem('user'))?.id } catch { return null } }
 const isAdmin = () => { try { return JSON.parse(localStorage.getItem('user'))?.role === 'Admin' } catch { return false } }
 
 const getAvatar = (author) =>
   author?.profile_info?.avatar
-    ? `http://localhost:5000${author.profile_info.avatar}`
+    ? mediaUrl(author.profile_info.avatar)
     : author?.avatar
-    ? (author.avatar.startsWith('http') ? author.avatar : `http://localhost:5000${author.avatar}`)
-    : `https://ui-avatars.com/api/?name=${encodeURIComponent(author?.user_info?.fullName || author?.fullName || 'User')}&background=14b8a6&color=fff&size=150`
+    ? mediaUrl(author.avatar)
+    : undefined
 
 const formatTime = (ts) => {
   const diff = Math.floor((Date.now() - new Date(ts)) / 1000)
@@ -30,10 +37,30 @@ const formatTime = (ts) => {
   return `${Math.floor(diff / 86400)}d ago`
 }
 
+const CATEGORIES = ['All', 'Sports', 'News', 'Trending', 'Entertainment', 'Food', 'Other']
+
+const getStoredCategory = () => {
+  try {
+    return localStorage.getItem('selectedCategory') || 'All'
+  } catch {
+    return 'All'
+  }
+}
+
+const setStoredCategory = (category) => {
+  try {
+    localStorage.setItem('selectedCategory', category)
+  } catch (error) {
+    console.error('Failed to store category preference:', error)
+  }
+}
+
 function PostItem({ post, onRemove }) {
   const uid = currentUserId()
   const admin = isAdmin()
+  const navigate = useNavigate()
   const { guard, showModal, closeModal } = useProfileGuard()
+  const toast = useToast()
   const [likes, setLikes] = useState(post.likes?.length || 0)
   const [liked, setLiked] = useState(post.likes?.some(l => l.user?.toString() === uid))
   const [comments, setComments] = useState(post.comments || [])
@@ -45,18 +72,29 @@ function PostItem({ post, onRemove }) {
   const [flagged, setFlagged] = useState(false)
   const inputRef = useRef(null)
 
+  const handleProfileClick = () => {
+    const authorId = post.author?._id || post.author?.id
+    if (authorId) {
+      navigate(`/profile/${authorId}`)
+    }
+  }
+
   const adminDelete = async () => {
-    if (!confirm('Delete this post?')) return
-    const res = await fetch(`http://localhost:5000/api/admin/posts/${post._id}`, {
+    const res = await fetch(`${API_BASE}/api/admin/posts/${post._id}`, {
       method: 'DELETE', headers: { Authorization: `Bearer ${token()}` }
     })
     const data = await res.json()
-    if (data.success && onRemove) onRemove(post._id)
+    if (data.success) {
+      if (onRemove) onRemove(post._id)
+      toast.success('Post deleted successfully')
+    } else {
+      toast.error('Failed to delete post')
+    }
   }
 
   const adminFlag = () => {
     setFlagged(f => !f)
-    // visual flag only — can wire to backend later
+    toast.info(flagged ? 'Post unflagged' : 'Post flagged for review')
   }
 
   const handleLike = async () => {
@@ -102,7 +140,7 @@ function PostItem({ post, onRemove }) {
         })
         const data = await res.json()
         if (data.success) setShares(data.shares)
-      } catch (err) {
+      } catch (error) {
         // user cancelled — do nothing
       }
     } else {
@@ -126,8 +164,8 @@ function PostItem({ post, onRemove }) {
 
   return (
     <PostCard>
-      <PostHeader>
-        <PostAvatar src={getAvatar(post.author)} alt={post.author?.user_info?.fullName} />
+      <PostHeader onClick={handleProfileClick} style={{ cursor: 'pointer' }}>
+        <Avatar src={getAvatar(post.author)} name={post.author?.user_info?.fullName || post.author?.fullName} alt={post.author?.user_info?.fullName || post.author?.fullName} size={48} />
         <PostUserInfo>
           <PostUserName>
             <span>{post.author?.user_info?.fullName || post.author?.fullName}</span>
@@ -148,26 +186,43 @@ function PostItem({ post, onRemove }) {
         })}
       </PostText>
 
+      {}
+      {post.category && post.category !== 'Other' && (
+        <div style={{ 
+          display: 'inline-block', 
+          padding: '4px 10px', 
+          borderRadius: '6px', 
+          backgroundColor: '#f0fdfa', 
+          border: '1px solid #14b8a6',
+          color: '#0f766e',
+          fontSize: '0.75rem',
+          fontWeight: 600,
+          marginBottom: '0.75rem'
+        }}>
+          📁 {post.category}
+        </div>
+      )}
+
       {post.media?.length > 0 && post.media.map((item, idx) =>
         item.type === 'image'
-          ? <PostImage key={idx} src={`http://localhost:5000${item.url}`} alt="Post media" />
+          ? <PostImage key={idx} src={mediaUrl(item.url)} alt="Post media" />
           : <video key={idx} controls style={{ width: '100%', borderRadius: 12, marginBottom: '1rem' }}>
-              <source src={`http://localhost:5000${item.url}`} />
+              <source src={mediaUrl(item.url)} />
             </video>
       )}
 
       <PostActions>
         <ActionButton onClick={handleLike} style={{ color: liked ? '#ef4444' : undefined }}>
           <Heart fill={liked ? '#ef4444' : 'none'} stroke={liked ? '#ef4444' : 'currentColor'} />
-          {likes}
+          {likes > 0 && <span>{likes}</span>}
         </ActionButton>
         <ActionButton onClick={toggleComments}>
           <MessageCircle />
-          {comments.length}
+          {comments.length > 0 && <span>{comments.length}</span>}
         </ActionButton>
         <ActionButton onClick={handleShare} style={{ position: 'relative' }}>
           <Share2 />
-          {shares}
+          {shares > 0 && <span>{shares}</span>}
           {shareCopied && (
             <span style={{
               position: 'absolute', bottom: '110%', left: '50%', transform: 'translateX(-50%)',
@@ -197,10 +252,12 @@ function PostItem({ post, onRemove }) {
             <div style={{ marginBottom: '0.75rem', display: 'flex', flexDirection: 'column', gap: '0.5rem', maxHeight: 200, overflowY: 'auto' }}>
               {comments.map((c, i) => (
                 <div key={i} style={{ display: 'flex', gap: '0.5rem', alignItems: 'flex-start' }}>
-                  <img
-                    src={c.user?.profile_info?.avatar ? `http://localhost:5000${c.user.profile_info.avatar}` : `https://ui-avatars.com/api/?name=${encodeURIComponent(c.user?.user_info?.fullName || 'U')}&background=14b8a6&color=fff&size=60`}
-                    style={{ width: 28, height: 28, borderRadius: '50%', objectFit: 'cover', flexShrink: 0 }}
-                    alt=""
+                  <Avatar
+                    src={c.user?.profile_info?.avatar ? `${API_BASE}${c.user.profile_info.avatar}` : c.user?.avatar?.startsWith('http') ? c.user.avatar : undefined}
+                    name={c.user?.user_info?.fullName || 'User'}
+                    alt={c.user?.user_info?.fullName || 'User'}
+                    size={28}
+                    style={{ flexShrink: 0 }}
                   />
                   <div style={{ backgroundColor: '#f1f5f9', borderRadius: 10, padding: '6px 10px', flex: 1 }}>
                     <div style={{ fontWeight: 700, fontSize: '0.78rem', color: '#0f172a' }}>{c.user?.user_info?.fullName || 'User'}</div>
@@ -231,25 +288,37 @@ function PostItem({ post, onRemove }) {
 function Feed() {
   const [posts, setPosts] = useState([])
   const [loading, setLoading] = useState(true)
+  const [selectedCategory, setSelectedCategory] = useState(getStoredCategory())
   const admin = isAdmin()
+  const navigate = useNavigate()
+  const { markFeedVisited } = useBadges()
 
   useEffect(() => {
-    const url = admin
-      ? 'http://localhost:5000/api/admin/feed'
-      : null
-    if (admin) {
-      fetch(url, { headers: { Authorization: `Bearer ${token()}` } })
-        .then(r => r.json())
-        .then(d => { if (d.success) setPosts(d.posts) })
-        .catch(console.error)
-        .finally(() => setLoading(false))
-    } else {
-      getFeed()
-        .then(r => setPosts(r.posts))
-        .catch(console.error)
-        .finally(() => setLoading(false))
+    const loadFeed = async () => {
+      setLoading(true)
+      const url = admin ? `${API_URL}/admin/feed` : null
+      try {
+        if (admin) {
+          const response = await fetch(url, { headers: { Authorization: `Bearer ${localStorage.getItem('token')}` } })
+          const data = await response.json()
+          if (data.success) setPosts(data.posts)
+        } else {
+          const data = await getFeed(1, 10, selectedCategory)
+          setPosts(data.posts)
+        }
+      } catch (error) {
+        console.error(error)
+      } finally {
+        setLoading(false)
+      }
     }
-  }, [])
+    loadFeed()
+  }, [selectedCategory, admin])
+
+  const handleCategoryChange = (category) => {
+    setSelectedCategory(category)
+    setStoredCategory(category)
+  }
 
   const handleRemove = (postId) => setPosts(prev => prev.filter(p => p._id !== postId))
 
@@ -258,9 +327,39 @@ function Feed() {
   return (
     <FeedContainer>
       <Stories />
+      
+      {}
+      <CreatePostSection onClick={() => navigate('/create-post')}>
+        <CreatePostInput placeholder="What's on your mind?" readOnly />
+        <ImageIcon size={18} style={{ color: '#14b8a6' }} />
+      </CreatePostSection>
+
+      <CategoryBar>
+        <CategoryTabs>
+          {CATEGORIES.map(category => (
+            <CategoryTab
+              key={category}
+              $isActive={selectedCategory === category}
+              onClick={() => handleCategoryChange(category)}
+            >
+              {category}
+            </CategoryTab>
+          ))}
+        </CategoryTabs>
+      </CategoryBar>
+
       {posts.length === 0 ? (
         <div style={{ textAlign: 'center', padding: '3rem', color: '#64748b' }}>
-          <p style={{ fontSize: '1.1rem' }}>No posts yet — be the first to post!</p>
+          <p style={{ fontSize: '1.25rem', fontWeight: 600, marginBottom: '0.5rem' }}>
+            {selectedCategory === 'All' 
+              ? 'No posts yet!' 
+              : `No ${selectedCategory} posts yet!`}
+          </p>
+          <p style={{ fontSize: '0.9375rem' }}>
+            {selectedCategory === 'All' 
+              ? 'Be the first to share something!' 
+              : `Be the first to post about ${selectedCategory}!`}
+          </p>
         </div>
       ) : posts.map(post => <PostItem key={post._id} post={post} onRemove={handleRemove} />)}
     </FeedContainer>
@@ -268,3 +367,4 @@ function Feed() {
 }
 
 export default Feed
+

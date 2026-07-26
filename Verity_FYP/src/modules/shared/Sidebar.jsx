@@ -1,3 +1,4 @@
+import { API_BASE, API_URL } from '../../config.js'
 import { useState, useEffect } from 'react'
 import { useLocation, useNavigate } from 'react-router-dom'
 import { 
@@ -8,17 +9,23 @@ import {
   PlusSquare, 
   User, 
   Settings,
-  Check, 
   LogOut,
   ClipboardCheck,
   BarChart3,
   ShoppingBag,
   Shield,
-  XCircle
+  XCircle,
+  X
 } from 'lucide-react'
 import { getCurrentUser, logout as apiLogout } from '../../services/api'
+import NotificationBadge from '../../components/Badge/NotificationBadge'
+import { useBadges } from '../../contexts/BadgeContext'
+import Avatar from '../../components/Avatar/Avatar'
+import DarkModeToggle from '../../components/DarkModeToggle/DarkModeToggle'
 import {
   SidebarContainer,
+  SidebarHeader,
+  SidebarCloseButton,
   LogoSection,
   LogoContainer,
   LogoBox,
@@ -34,7 +41,6 @@ import {
   Profile_Button,
   UserProfileSection,
   UserProfileButton,
-  UserAvatar,
   UserInfo,
   UserName,
   UserEmail,
@@ -42,23 +48,33 @@ import {
   UserMenu,
   UserMenuItem,
   SignOutButton,
+  ThemeToggleSection,
 } from './Sidebar.styled'
 function Sidebar({ isOpen, setsidebarOpen }) {
   const location = useLocation()
   const navigate = useNavigate()
-  const [user, setUser] = useState(null)
-  const [menuOpen, setMenuOpen] = useState(false)
-  useEffect(() => {
+  const [user, setUser] = useState(() => {
     const currentUser = getCurrentUser()
-    console.log('Sidebar - Current user from localStorage:', currentUser)
-    console.log('Sidebar - User avatar:', currentUser?.avatar)
     if (currentUser && currentUser.fullName) {
       const nameParts = currentUser.fullName.split(' ')
       const uniqueParts = [...new Set(nameParts)]
-      currentUser.fullName = uniqueParts.join(' ')
+      return { ...currentUser, fullName: uniqueParts.join(' ') }
     }
-    setUser(currentUser)
-  }, [])
+    return currentUser
+  })
+  const [menuOpen, setMenuOpen] = useState(false)
+  const { badges, refreshBadges } = useBadges()
+
+  useEffect(() => {
+    refreshBadges()
+  }, [location.pathname, refreshBadges])
+  const handleMenuItemClick = () => {
+    // Only close sidebar on mobile when clicking a menu item
+    if (window.innerWidth <= 639) {
+      setsidebarOpen(false)
+    }
+  }
+
   const handleLogoClick = () => {
     setsidebarOpen(!isOpen)
   }
@@ -87,10 +103,17 @@ function Sidebar({ isOpen, setsidebarOpen }) {
     <SidebarContainer $isOpen={isOpen}>
       {}
       <LogoSection>
-        <LogoContainer onClick={handleLogoClick}>
-          <LogoBox><Check size={20} /></LogoBox>
-          <BrandName $isOpen={isOpen}>Verity</BrandName>
-        </LogoContainer>
+        <SidebarHeader>
+          <LogoContainer onClick={handleLogoClick}>
+            <LogoBox>V</LogoBox>
+            <BrandName $isOpen={isOpen}>Verity</BrandName>
+          </LogoContainer>
+          {isOpen && (
+            <SidebarCloseButton onClick={() => setsidebarOpen(false)} aria-label="Close sidebar">
+              <X size={18} />
+            </SidebarCloseButton>
+          )}
+        </SidebarHeader>
         <Divider />
       </LogoSection>
       {}
@@ -99,31 +122,35 @@ function Sidebar({ isOpen, setsidebarOpen }) {
           {}
           {isReviewer && (
             <>
-              <Feed_Button to="/review-center" $isActive={isReviewCenterActive} $isOpen={isOpen}>
+              <Feed_Button to="/review-center" $isActive={isReviewCenterActive} $isOpen={isOpen} onClick={handleMenuItemClick}>
                 <ClipboardCheck />
                 <span>Review Center</span>
               </Feed_Button>
-              <Connections_Button to="/feed" $isActive={isFeedActive} $isOpen={isOpen}>
-                <Home />
+              <Connections_Button to="/feed" $isActive={isFeedActive} $isOpen={isOpen} onClick={handleMenuItemClick}>
+                <NotificationBadge count={badges.newFeedAuthors} feedMode>
+                  <Home />
+                </NotificationBadge>
                 <span>Feed</span>
               </Connections_Button>
-              <Discover_Button to="/shopping" $isActive={isShoppingActive} $isOpen={isOpen}>
+              <Discover_Button to="/shopping" $isActive={isShoppingActive} $isOpen={isOpen} onClick={handleMenuItemClick}>
                 <ShoppingBag />
                 <span>Shopping</span>
               </Discover_Button>
-              <Discover_Button to="/messages" $isActive={isMessagesActive} $isOpen={isOpen}>
-                <MessageCircle />
+              <Discover_Button to="/messages" $isActive={isMessagesActive} $isOpen={isOpen} onClick={handleMenuItemClick}>
+                <NotificationBadge count={badges.unreadMessages}>
+                  <MessageCircle />
+                </NotificationBadge>
                 <span>Messages</span>
               </Discover_Button>
-              <Profile_Button to="/connections" $isActive={isConnectionsActive} $isOpen={isOpen}>
+              <Profile_Button to="/connections" $isActive={isConnectionsActive} $isOpen={isOpen} onClick={handleMenuItemClick}>
                 <Users />
                 <span>Connections</span>
               </Profile_Button>
-              <CreatePost_Button to="/create-post" $isActive={isCreatePostActive} $isOpen={isOpen}>
+              <CreatePost_Button to="/create-post" $isActive={isCreatePostActive} $isOpen={isOpen} onClick={handleMenuItemClick}>
                 <PlusSquare />
                 <span>Create Post</span>
               </CreatePost_Button>
-              <Profile_Button to="/profile" $isActive={isProfileActive} $isOpen={isOpen}>
+              <Profile_Button to="/profile" $isActive={isProfileActive} $isOpen={isOpen} onClick={handleMenuItemClick}>
                 <User />
                 <span>Profile</span>
               </Profile_Button>
@@ -131,25 +158,34 @@ function Sidebar({ isOpen, setsidebarOpen }) {
           )}
           {isAdmin && (
             <>
-              <Feed_Button to="/feed" $isActive={isFeedActive} $isOpen={isOpen}>
-                <Home /><span>Feed</span>
+              <Feed_Button to="/feed" $isActive={isFeedActive} $isOpen={isOpen} onClick={handleMenuItemClick}>
+                <NotificationBadge count={badges.newFeedAuthors} feedMode>
+                  <Home />
+                </NotificationBadge>
+                <span>Feed</span>
               </Feed_Button>
-              <Discover_Button to="/discover" $isActive={isDiscoverActive} $isOpen={isOpen}>
+              <Discover_Button to="/discover" $isActive={isDiscoverActive} $isOpen={isOpen} onClick={handleMenuItemClick}>
                 <Compass /><span>Discover</span>
               </Discover_Button>
-              <Connections_Button to="/connections" $isActive={isConnectionsActive} $isOpen={isOpen}>
+              <Connections_Button to="/connections" $isActive={isConnectionsActive} $isOpen={isOpen} onClick={handleMenuItemClick}>
                 <Users /><span>Connections</span>
               </Connections_Button>
-              <Messages_Button to="/messages" $isActive={isMessagesActive} $isOpen={isOpen}>
-                <MessageCircle /><span>Messages</span>
+              <Messages_Button to="/messages" $isActive={isMessagesActive} $isOpen={isOpen} onClick={handleMenuItemClick}>
+                <NotificationBadge count={badges.unreadMessages}>
+                  <MessageCircle />
+                </NotificationBadge>
+                <span>Messages</span>
               </Messages_Button>
-              <CreatePost_Button to="/create-post" $isActive={isCreatePostActive} $isOpen={isOpen}>
+              <CreatePost_Button to="/create-post" $isActive={isCreatePostActive} $isOpen={isOpen} onClick={handleMenuItemClick}>
                 <PlusSquare /><span>Create Post</span>
               </CreatePost_Button>
-              <Profile_Button to="/rejected-posts" $isActive={isRejectedActive} $isOpen={isOpen}>
-                <XCircle /><span>Rejected Posts</span>
+              <Profile_Button to="/rejected-posts" $isActive={isRejectedActive} $isOpen={isOpen} onClick={handleMenuItemClick}>
+                <NotificationBadge count={badges.unreadRejections}>
+                  <XCircle />
+                </NotificationBadge>
+                <span>Rejected Posts</span>
               </Profile_Button>
-              <Profile_Button to="/profile" $isActive={isProfileActive} $isOpen={isOpen}>
+              <Profile_Button to="/profile" $isActive={isProfileActive} $isOpen={isOpen} onClick={handleMenuItemClick}>
                 <User /><span>Profile</span>
               </Profile_Button>
             </>
@@ -157,35 +193,41 @@ function Sidebar({ isOpen, setsidebarOpen }) {
           {}
           {!isReviewer && !isBusiness && !isAdmin && (
             <>
-              <Feed_Button to="/feed" $isActive={isFeedActive} $isOpen={isOpen}>
-                <Home />
+              <Feed_Button to="/feed" $isActive={isFeedActive} $isOpen={isOpen} onClick={handleMenuItemClick}>
+                <NotificationBadge count={badges.newFeedAuthors} feedMode>
+                  <Home />
+                </NotificationBadge>
                 <span>Feed</span>
               </Feed_Button>
-              <Discover_Button to="/shopping" $isActive={isShoppingActive} $isOpen={isOpen}>
+              <Discover_Button to="/shopping" $isActive={isShoppingActive} $isOpen={isOpen} onClick={handleMenuItemClick}>
                 <ShoppingBag />
                 <span>Shopping</span>
               </Discover_Button>
-              <Messages_Button to="/messages" $isActive={isMessagesActive} $isOpen={isOpen}>
-                <MessageCircle />
+              <Messages_Button to="/messages" $isActive={isMessagesActive} $isOpen={isOpen} onClick={handleMenuItemClick}>
+                <NotificationBadge count={badges.unreadMessages}>
+                  <MessageCircle />
+                </NotificationBadge>
                 <span>Messages</span>
               </Messages_Button>
-              <Connections_Button to="/connections" $isActive={isConnectionsActive} $isOpen={isOpen}>
+              <Connections_Button to="/connections" $isActive={isConnectionsActive} $isOpen={isOpen} onClick={handleMenuItemClick}>
                 <Users />
                 <span>Connections</span>
               </Connections_Button>
-              <Discover_Button to="/discover" $isActive={isDiscoverActive} $isOpen={isOpen}>
+              <Discover_Button to="/discover" $isActive={isDiscoverActive} $isOpen={isOpen} onClick={handleMenuItemClick}>
                 <Compass />
                 <span>Discover</span>
               </Discover_Button>
-              <CreatePost_Button to="/create-post" $isActive={isCreatePostActive} $isOpen={isOpen}>
+              <CreatePost_Button to="/create-post" $isActive={isCreatePostActive} $isOpen={isOpen} onClick={handleMenuItemClick}>
                 <PlusSquare />
                 <span>Create Post</span>
               </CreatePost_Button>
-              <Profile_Button to="/rejected-posts" $isActive={isRejectedActive} $isOpen={isOpen}>
-                <XCircle />
+              <Profile_Button to="/rejected-posts" $isActive={isRejectedActive} $isOpen={isOpen} onClick={handleMenuItemClick}>
+                <NotificationBadge count={badges.unreadRejections}>
+                  <XCircle />
+                </NotificationBadge>
                 <span>Rejected Posts</span>
               </Profile_Button>
-              <Profile_Button to="/profile" $isActive={isProfileActive} $isOpen={isOpen}>
+              <Profile_Button to="/profile" $isActive={isProfileActive} $isOpen={isOpen} onClick={handleMenuItemClick}>
                 <User />
                 <span>Profile</span>
               </Profile_Button>
@@ -193,22 +235,24 @@ function Sidebar({ isOpen, setsidebarOpen }) {
           )}
         </MenuList>
       </NavigationMenu>
+      <ThemeToggleSection $isOpen={isOpen}>
+        <DarkModeToggle />
+        {isOpen && <span>Dark mode</span>}
+      </ThemeToggleSection>
       {}
       <UserProfileSection>
         <UserProfileButton onClick={() => setMenuOpen(!menuOpen)}>
-          <UserAvatar 
+          <Avatar
             src={
-              user?.avatar?.startsWith('http') 
-                ? user.avatar 
+              user?.avatar?.startsWith('http')
+                ? user.avatar
                 : user?.avatar?.startsWith('/uploads')
-                ? `http://localhost:5000${user.avatar}`
-                : `https://ui-avatars.com/api/?name=${encodeURIComponent(user?.fullName || 'User')}&background=14b8a6&color=fff&size=150`
-            } 
-            alt={user?.fullName || 'User'} 
-            onError={(e) => {
-              console.error('Sidebar avatar failed to load:', e.target.src)
-              e.target.src = `https://ui-avatars.com/api/?name=${encodeURIComponent(user?.fullName || 'User')}&background=14b8a6&color=fff&size=150`
-            }}
+                  ? `${API_BASE}${user.avatar}`
+                  : undefined
+            }
+            name={user?.fullName || 'User'}
+            alt={user?.fullName || 'User'}
+            size={44}
           />
           <UserInfo $isOpen={isOpen}>
             <UserName>{user?.fullName || "User"}</UserName>

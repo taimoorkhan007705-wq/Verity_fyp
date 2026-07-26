@@ -175,6 +175,88 @@ export const promoteToReviewer = async (req, res) => {
   } catch (e) { res.status(500).json({ success: false, message: e.message }) }
 }
 
+/**
+ * Get all reviewers with their stats and trust scores (leaderboard)
+ * Sorted by trust score descending - shows ALL reviewers including inactive
+ */
+export const getReviewerLeaderboard = async (req, res) => {
+  try {
+    console.log('[GetReviewerLeaderboard] ===== START =====')
+    console.log('[GetReviewerLeaderboard] Request URL:', req.originalUrl)
+    console.log('[GetReviewerLeaderboard] Request headers:', req.headers)
+    
+    // First check if any reviewers exist
+    const count = await Reviewer.countDocuments({})
+    console.log('[GetReviewerLeaderboard] Total reviewers in database:', count)
+    
+    const reviewers = await Reviewer.find({})
+      .select('-password')
+      .sort({ 'trust_security.trustScore': -1 })
+      .lean()
+
+    console.log('[GetReviewerLeaderboard] Found and sorted reviewers:', reviewers.length)
+
+    if (reviewers.length > 0) {
+      console.log('[GetReviewerLeaderboard] First reviewer:', {
+        fullName: reviewers[0].user_info?.fullName,
+        email: reviewers[0].email,
+        trustScore: reviewers[0].trust_security?.trustScore
+      })
+    }
+
+    const leaderboard = reviewers.map((reviewer, index) => ({
+      rank: index + 1,
+      id: reviewer._id,
+      fullName: reviewer.user_info?.fullName || 'Unknown',
+      email: reviewer.email,
+      avatar: reviewer.profile_info?.avatar || null,
+      bio: reviewer.profile_info?.bio || '',
+      
+      // Trust & Scoring
+      trustScore: reviewer.trust_security?.trustScore || 50,
+      isVerified: reviewer.trust_security?.isVerified || false,
+      isActive: reviewer.trust_security?.isActive !== false,
+      
+      // Reviewer Stats
+      reviewsCompleted: reviewer.reviewer_stats?.reviewsCompleted || 0,
+      reviewsPending: reviewer.reviewer_stats?.reviewsPending || 0,
+      accuracy: reviewer.reviewer_stats?.accuracy || 0,
+      approvedCount: reviewer.reviewer_stats?.approvedCount || 0,
+      rejectedCount: reviewer.reviewer_stats?.rejectedCount || 0,
+      
+      // Activity
+      expertise: reviewer.reviewer_profile?.expertiseLevel || 'Junior',
+      specialization: reviewer.reviewer_profile?.specialization || ['General'],
+      lastReviewAt: reviewer.activity_tracking?.lastReviewAt || null,
+      joinedAt: reviewer.createdAt,
+    }))
+
+    console.log('[GetReviewerLeaderboard] Returning leaderboard with', leaderboard.length, 'reviewers')
+    console.log('[GetReviewerLeaderboard] Response object:', JSON.stringify({ 
+      success: true, 
+      total: leaderboard.length,
+      leaderboard: leaderboard.slice(0, 1) // log first one only
+    }, null, 2))
+
+    const response = { 
+      success: true, 
+      total: leaderboard.length,
+      leaderboard,
+      message: leaderboard.length === 0 ? 'No reviewers found' : `Found ${leaderboard.length} reviewers`
+    }
+    
+    console.log('[GetReviewerLeaderboard] ===== END - Sending response =====')
+    res.json(response)
+  } catch (e) { 
+    console.error('[GetReviewerLeaderboard] ERROR:', e.message)
+    console.error('[GetReviewerLeaderboard] Error stack:', e.stack)
+    res.status(500).json({ 
+      success: false, 
+      message: 'Failed to fetch leaderboard: ' + e.message
+    }) 
+  }
+}
+
 // ── get all posts ─────────────────────────────────────────
 export const getAllPosts = async (req, res) => {
   try {
@@ -219,8 +301,8 @@ export const seedAdmin = async () => {
       profile_info: { bio: 'Platform Administrator' },
       trust_security: { isVerified: true, isActive: true, trustScore: 100 },
     })
-    console.log('✅ Admin account created: iamadmin@verity.com / iamAdmin098')
-  } catch (e) {
-    console.error('Admin seed error:', e.message)
-  }
+      } catch (e) {
+      }
 }
+
+

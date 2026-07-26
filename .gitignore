@@ -1,0 +1,61 @@
+# Environment variables
+.env
+.env.local
+.env.*.local
+
+# Dependencies
+node_modules/
+package-lock.json
+yarn.lock
+
+# Build outputs
+dist/
+build/
+*.tsbuildinfo
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+
+# Logs
+logs/
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Testing
+coverage/
+
+# OS
+Thumbs.db
+
+# Temporary files
+*.tmp
+tmp/
+temp/
+
+# MongoDB
+*.db
+*.sqlite
+
+# ngrok
+ngrok.yml
+response*.txt
+
+# Backend specific
+backend/.env
+backend/node_modules/
+backend/uploads/
+
+# Frontend specific
+Verity_FYP/node_modules/
+Verity_FYP/dist/
+Verity_FYP/.env
+
+# Config files with secrets
+backend/.env.example is OK to commit

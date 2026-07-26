@@ -1,28 +1,59 @@
 import styled from 'styled-components'
+
 export const StoriesContainer = styled.div`
-  background: white;
+  background: ${props => props.theme.colors.surface};
   border-radius: 0.75rem;
   padding: 1rem;
   margin-bottom: 1.5rem;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  box-shadow: 0 1px 3px ${props => props.theme.colors.shadow};
+  border: 1px solid ${props => props.theme.colors.borderLight};
+  transition: background-color 0.3s ease, border-color 0.3s ease;
+  
+  @media (max-width: 640px) {
+    padding: 0.75rem;
+    margin-bottom: 1rem;
+  }
+  
+  @media (max-width: 480px) {
+    padding: 0.5rem;
+    margin-bottom: 0.75rem;
+  }
 `
+
 export const StoriesScroll = styled.div`
   display: flex;
   gap: 1rem;
   overflow-x: auto;
   padding-bottom: 0.5rem;
+  scroll-behavior: smooth;
+  -webkit-overflow-scrolling: touch;
+  
+  @media (max-width: 640px) {
+    gap: 0.75rem;
+  }
+  
+  @media (max-width: 480px) {
+    gap: 0.5rem;
+    padding-bottom: 0.25rem;
+  }
+  
   &::-webkit-scrollbar {
     height: 6px;
   }
   &::-webkit-scrollbar-track {
-    background: #f1f1f1;
+    background: ${props => props.theme.colors.background};
     border-radius: 10px;
   }
   &::-webkit-scrollbar-thumb {
-    background: #14b8a6;
+    background: ${props => props.theme.colors.primary};
     border-radius: 10px;
+    
+    &:hover {
+      background: ${props => props.theme.colors.primaryHover};
+    }
   }
 `
+
 export const StoryCircle = styled.div`
   display: flex;
   flex-direction: column;
@@ -30,28 +61,51 @@ export const StoryCircle = styled.div`
   gap: 0.5rem;
   cursor: pointer;
   flex-shrink: 0;
-  transition: transform 0.2s;
+  transition: transform 0.2s, filter 0.2s;
+  
   &:hover {
     transform: scale(1.05);
   }
+  
+  @media (max-width: 480px) {
+    gap: 0.25rem;
+  }
 `
+
 export const StoryRing = styled.div`
   width: 70px;
   height: 70px;
   border-radius: 50%;
   padding: 3px;
   background: ${props => props.$hasViewed 
-    ? 'linear-gradient(45deg, #d1d5db, #9ca3af)' 
+    ? props.theme.mode === 'dark' 
+      ? 'linear-gradient(45deg, #475569, #334155)' 
+      : 'linear-gradient(45deg, #d1d5db, #9ca3af)' 
     : 'linear-gradient(45deg, #14b8a6, #0d9488)'};
   display: flex;
   align-items: center;
   justify-content: center;
+  transition: all 0.3s ease;
+  box-shadow: 0 2px 8px ${props => props.theme.colors.shadow};
+  overflow: hidden;
+  
+  @media (max-width: 640px) {
+    width: 60px;
+    height: 60px;
+  }
+  
+  @media (max-width: 480px) {
+    width: 50px;
+    height: 50px;
+  }
 `
+
 export const StoryImage = styled.img`
-  width: 64px;
-  height: 64px;
+  width: 100%;
+  height: 100%;
   border-radius: 50%;
   object-fit: cover;
+  display: block;
   border: 3px solid white;
 `
 export const StoryName = styled.span`

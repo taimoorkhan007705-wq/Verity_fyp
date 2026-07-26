@@ -1,3 +1,4 @@
+import { API_BASE, API_URL, mediaUrl } from '../../config.js'
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { LayoutDashboard, Package, MessageSquare, TrendingUp, Plus, LogOut, X, Send, ImageIcon, Video } from "lucide-react";
@@ -8,15 +9,12 @@ const BusinessDashboard = ({ onLogout }) => {
   const [activeTab, setActiveTab] = useState("messages"); 
   const [showAddForm, setShowAddForm] = useState(false);
   const [myProducts, setMyProducts] = useState([]);
-  React.useEffect(() => {
-    loadMyProducts();
-  }, []);
   const loadMyProducts = async () => {
     try {
       const token = localStorage.getItem('token');
-      const response = await fetch('http://localhost:5000/api/products/business/my-products', {
+      const response = await fetch(`${API_URL}/products/business/my-products`, {
         headers: {
-          'Authorization': `Bearer ${token}`
+          Authorization: `Bearer ${token}`,
         }
       });
       const data = await response.json();
@@ -28,7 +26,7 @@ const BusinessDashboard = ({ onLogout }) => {
           description: p.description,
           category: p.category,
           stock: p.stock,
-          preview: p.images && p.images.length > 0 ? `http://localhost:5000${p.images[0].url}` : null
+          preview: p.images && p.images.length > 0 ? mediaUrl(p.images[0].url) : null
         }));
         setMyProducts(formattedProducts);
       }
@@ -36,14 +34,17 @@ const BusinessDashboard = ({ onLogout }) => {
       console.error('Failed to load products:', error);
     }
   };
+  React.useEffect(() => {
+    loadMyProducts();
+  }, []);
   const [productData, setProductData] = useState({
-    title: "", 
-    price: "", 
-    description: "", 
-    category: "Electronics", 
-    stock: "", 
-    externalLink: "", 
-    imageFile: null, 
+    title: "",
+    price: "",
+    description: "",
+    category: "Electronics",
+    stock: "",
+    externalLink: "",
+    imageFile: null,
     videoFile: null
   });
   const theme = { teal: "#14b8a6", dark: "#0f172a", border: "#e2e8f0", bg: "#f1f5f9" };
@@ -70,7 +71,7 @@ const BusinessDashboard = ({ onLogout }) => {
       }
       const token = localStorage.getItem('token');
       console.log('Sending request to backend...');
-      const response = await fetch('http://localhost:5000/api/products', {
+      const response = await fetch(`${API_URL}/products`, {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${token}`
@@ -359,3 +360,4 @@ const publishBtn = (theme) => ({
   cursor: "pointer" 
 });
 export default BusinessDashboard;
+

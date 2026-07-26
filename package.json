@@ -1,0 +1,13 @@
+{
+  "name": "verity",
+  "version": "1.0.0",
+  "description": "Verity FYP — run both backend and frontend with a single command",
+  "scripts": {
+    "dev": "concurrently --names \"BACKEND,FRONTEND\" --prefix-colors \"cyan,magenta\" \"npm run dev --prefix backend\" \"npm run dev --prefix Verity_FYP\"",
+    "dev:backend": "npm run dev --prefix backend",
+    "dev:frontend": "npm run dev --prefix Verity_FYP"
+  },
+  "devDependencies": {
+    "concurrently": "^10.0.3"
+  }
+}

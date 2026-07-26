@@ -30,8 +30,7 @@ export const createStory = async (req, res) => {
       story
     })
   } catch (error) {
-    console.error('Create story error:', error)
-    res.status(500).json({ success: false, message: 'Failed to create story', error: error.message })
+        res.status(500).json({ success: false, message: 'Failed to create story', error: error.message })
   }
 }
 export const getStories = async (req, res) => {
@@ -68,8 +67,7 @@ export const getStories = async (req, res) => {
       stories: storiesArray
     })
   } catch (error) {
-    console.error('Get stories error:', error)
-    res.status(500).json({ success: false, message: 'Failed to fetch stories', error: error.message })
+        res.status(500).json({ success: false, message: 'Failed to fetch stories', error: error.message })
   }
 }
 export const getUserStories = async (req, res) => {
@@ -87,8 +85,7 @@ export const getUserStories = async (req, res) => {
       stories
     })
   } catch (error) {
-    console.error('Get user stories error:', error)
-    res.status(500).json({ success: false, message: 'Failed to fetch user stories', error: error.message })
+        res.status(500).json({ success: false, message: 'Failed to fetch user stories', error: error.message })
   }
 }
 export const viewStory = async (req, res) => {
@@ -111,8 +108,7 @@ export const viewStory = async (req, res) => {
       viewCount: story.viewCount
     })
   } catch (error) {
-    console.error('View story error:', error)
-    res.status(500).json({ success: false, message: 'Failed to view story', error: error.message })
+        res.status(500).json({ success: false, message: 'Failed to view story', error: error.message })
   }
 }
 export const deleteStory = async (req, res) => {
@@ -136,7 +132,8 @@ export const deleteStory = async (req, res) => {
       message: 'Story deleted successfully'
     })
   } catch (error) {
-    console.error('Delete story error:', error)
-    res.status(500).json({ success: false, message: 'Failed to delete story', error: error.message })
+        res.status(500).json({ success: false, message: 'Failed to delete story', error: error.message })
   }
 }
+
+

@@ -1,3 +1,4 @@
+/* eslint-disable react-refresh/only-export-components */
 import { createContext, useContext, useState } from 'react'
 const AuthContext = createContext()
 export function AuthProvider({ children }) {
@@ -29,3 +30,4 @@ export function useAuth() {
   }
   return context
 }
+

@@ -1,7 +1,11 @@
+import { API_BASE, API_URL } from '../../config.js'
 import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { Camera, ArrowLeft } from 'lucide-react'
 import { getCurrentUser, getProfile, updateProfile } from '../../services/api'
+import ImageCropper from '../../components/ImageCropper/ImageCropper'
+import { loadImageFile, validateImageDimensions } from '../../utils/imageUploadHandler'
+import { useToast } from '../../contexts/ToastContext'
 import {
   EditContainer,
   EditHeader,
@@ -32,32 +36,43 @@ function EditProfile() {
   })
   const [avatarFile, setAvatarFile] = useState(null)
   const [loading, setLoading] = useState(false)
+  const [cropperImage, setCropperImage] = useState(null)
+  const toast = useToast()
   useEffect(() => {
     loadProfile()
   }, [])
   const loadProfile = async () => {
     try {
-      const response = await getProfile()
-      const user = response.user
+      // ALWAYS use getCurrentUser() first (from localStorage)
+      const user = getCurrentUser()
+      if (!user) {
+        throw new Error('No user logged in')
+      }
+      console.log('[EditProfile] Using current user from localStorage:', user)
+      const nameParts = user.fullName?.split(' ') || []
       setFormData({
-        firstName: user.firstName || '',
-        lastName: user.lastName || '',
+        firstName: nameParts[0] || '',
+        lastName: nameParts.slice(1).join(' ') || '',
         bio: user.bio || '',
         website: user.website || '',
-        avatar: user.avatar ? `http://localhost:5000${user.avatar}` : 'https://via.placeholder.com/150'
+        avatar: user.avatar ? `${API_BASE}${user.avatar}` : 'https://via.placeholder.com/150'
       })
     } catch (error) {
-      console.error('Failed to load profile:', error)
-      const user = getCurrentUser()
-      if (user) {
-        const nameParts = user.fullName?.split(' ') || []
+      console.error('[EditProfile] Failed to load from localStorage:', error)
+      // Fallback to API only if localStorage fails
+      try {
+        const response = await getProfile()
+        const user = response.user
+        console.log('[EditProfile] Loaded from API:', user)
         setFormData({
-          firstName: nameParts[0] || '',
-          lastName: nameParts.slice(1).join(' ') || '',
+          firstName: user.firstName || '',
+          lastName: user.lastName || '',
           bio: user.bio || '',
           website: user.website || '',
-          avatar: user.avatar ? `http://localhost:5000${user.avatar}` : 'https://via.placeholder.com/150'
+          avatar: user.avatar ? `${API_BASE}${user.avatar}` : 'https://via.placeholder.com/150'
         })
+      } catch (apiError) {
+        console.error('[EditProfile] API also failed:', apiError)
       }
     }
   }
@@ -71,15 +86,15 @@ function EditProfile() {
   const handleImageChange = (e) => {
     const file = e.target.files[0]
     if (file) {
-      setAvatarFile(file)
-      const reader = new FileReader()
-      reader.onloadend = () => {
-        setFormData(prev => ({
-          ...prev,
-          avatar: reader.result
-        }))
-      }
-      reader.readAsDataURL(file)
+      loadImageFile(file)
+        .then(async (base64) => {
+          // Validate dimensions - profile pics should be at least 200x200
+          await validateImageDimensions(base64, 200, 200)
+          setCropperImage(base64)
+        })
+        .catch(error => {
+          toast.error(error.message)
+        })
     }
   }
   const handleSubmit = async (e) => {
@@ -105,6 +120,33 @@ function EditProfile() {
   }
   return (
     <EditContainer>
+      {cropperImage && (
+        <ImageCropper
+          image={cropperImage}
+          onCrop={(croppedImage) => {
+            // Convert cropped base64 to file
+            const arr = croppedImage.split(',')
+            const mime = arr[0].match(/:(.*?);/)[1]
+            const bstr = atob(arr[1])
+            let n = bstr.length
+            const u8arr = new Uint8Array(n)
+            while (n--) {
+              u8arr[n] = bstr.charCodeAt(n)
+            }
+            const croppedFile = new File([u8arr], 'avatar.jpg', { type: mime })
+            setAvatarFile(croppedFile)
+            setFormData(prev => ({
+              ...prev,
+              avatar: croppedImage
+            }))
+            setCropperImage(null)
+            toast.success('Photo selected! Now save your changes.')
+          }}
+          onCancel={() => setCropperImage(null)}
+          aspectRatio={1}
+          title="Crop Your Profile Picture"
+        />
+      )}
       <EditHeader>
         <BackButton onClick={() => navigate('/profile')}>
           <ArrowLeft size={24} />
@@ -186,3 +228,4 @@ function EditProfile() {
   )
 }
 export default EditProfile
+
