@@ -1,16 +1,40 @@
-import { API_BASE } from '../../config.js'
 import { useState, useEffect } from 'react'
-import { Award, ChevronDown, ChevronUp, Medal } from 'lucide-react'
+import { Award, Settings, X, Lock, Bell, Mail, LogOut, User, Shield } from 'lucide-react'
 import { getCurrentUser, getReviewerStats, getReviewerLeaderboard } from '../../services/api'
 import Avatar from '../../components/Avatar/Avatar'
-import { mediaUrl } from '../../config.js'
+import { mediaUrl, API_BASE } from '../../config.js'
 import {
   RightSidebarContainer,
+  RightSidebarHeader,
+  LogoSection,
+  LogoBox,
+  ReviewerButton,
+  SettingsButton,
+  ButtonsContainer,
+  SidebarCloseButton,
+  Divider,
+  LeaderboardContent,
+  LeaderboardHeader,
+  LeaderboardList,
+  ReviewerItem,
+  CurrentUserCard,
+  NoDataMessage,
+  SettingsContent,
+  SettingsSection,
+  SettingItem,
+  SettingLabel,
+  SettingDescription,
+  SettingControl,
+  SettingInput,
+  SettingButton,
+  ToggleSwitch,
 } from './RightSidebar.styled'
 
 function RightSidebar() {
   const user = getCurrentUser()
+  const [isOpen, setIsOpen] = useState(true)
   const [showLeaderboard, setShowLeaderboard] = useState(false)
+  const [showSettings, setShowSettings] = useState(false)
   const [stats, setStats] = useState({
     totalReviews: 0,
     approvedReviews: 0,
@@ -19,57 +43,145 @@ function RightSidebar() {
     accuracy: 0
   })
   const [leaderboard, setLeaderboard] = useState([])
-  const [loadingStats, setLoadingStats] = useState(true)
   const [loadingLeaderboard, setLoadingLeaderboard] = useState(false)
 
-  useEffect(() => {
-    // Load leaderboard for all users (not just reviewers)
-    loadLeaderboard()
-    
-    // Auto-refresh every 30 seconds to show updated trust scores
-    const interval = setInterval(() => {
-      console.log('[RightSidebar] Auto-refreshing leaderboard...')
-      loadLeaderboard()
-    }, 30000)
-    
-    return () => clearInterval(interval)
-  }, [user])
+  // Settings state
+  const [settings, setSettings] = useState({
+    currentPassword: '',
+    newPassword: '',
+    confirmPassword: '',
+    emailNotifications: true,
+    pushNotifications: true,
+    twoFactorAuth: false,
+    profileVisibility: 'public',
+    dataCollection: true,
+  })
+  const [passwordChangeMessage, setPasswordChangeMessage] = useState('')
+  const [passwordChangeError, setPasswordChangeError] = useState('')
 
-  const loadStats = async () => {
-    try {
-      const response = await getReviewerStats()
-      setStats(response.stats)
-    } catch (error) {
-      console.error('Failed to load stats:', error)
-    } finally {
-      setLoadingStats(false)
+  useEffect(() => {
+    if (showLeaderboard) {
+      loadLeaderboard()
     }
-  }
+  }, [showLeaderboard])
+
+  useEffect(() => {
+    // Listen for Settings click from Sidebar
+    const handleOpenSettings = () => {
+      setShowSettings(true)
+      setShowLeaderboard(false)
+      setIsOpen(true)
+      localStorage.removeItem('openRightSidebarSettings')
+    }
+
+    window.addEventListener('openSettings', handleOpenSettings)
+    return () => window.removeEventListener('openSettings', handleOpenSettings)
+  }, [])
 
   const loadLeaderboard = async () => {
     try {
-      console.log('[RightSidebar] Loading leaderboard...')
+      setLoadingLeaderboard(true)
       const response = await getReviewerLeaderboard()
-      console.log('[RightSidebar] Response:', response)
       
       if (response?.leaderboard && Array.isArray(response.leaderboard)) {
-        console.log('[RightSidebar] Found', response.leaderboard.length, 'reviewers')
         setLeaderboard(response.leaderboard)
       } else {
-        console.warn('[RightSidebar] No leaderboard data found')
         setLeaderboard([])
       }
     } catch (error) {
-      console.error('[RightSidebar] Failed to load leaderboard:', error)
+      console.error('Failed to load leaderboard:', error)
       setLeaderboard([])
     } finally {
       setLoadingLeaderboard(false)
     }
   }
 
-  const handleLeaderboardClick = () => {
-    // Just toggle - leaderboard is already loaded on mount
+  const toggleLeaderboard = () => {
     setShowLeaderboard(!showLeaderboard)
+    setIsOpen(!showLeaderboard)  // Auto-expand when opening leaderboard
+    if (showSettings) setShowSettings(false)
+  }
+
+  const closeLeaderboard = () => {
+    setShowLeaderboard(false)
+  }
+
+  const toggleSettings = () => {
+    setShowSettings(!showSettings)
+    setIsOpen(!showSettings)  // Auto-expand when opening settings
+    if (showLeaderboard) setShowLeaderboard(false)
+  }
+
+  const closeSettings = () => {
+    setShowSettings(false)
+  }
+
+  const handleSettingChange = (field, value) => {
+    setSettings({
+      ...settings,
+      [field]: value
+    })
+    setPasswordChangeMessage('')
+    setPasswordChangeError('')
+  }
+
+  const handlePasswordChange = async () => {
+    setPasswordChangeError('')
+    setPasswordChangeMessage('')
+
+    if (!settings.currentPassword) {
+      setPasswordChangeError('Current password is required')
+      return
+    }
+    if (!settings.newPassword) {
+      setPasswordChangeError('New password is required')
+      return
+    }
+    if (settings.newPassword !== settings.confirmPassword) {
+      setPasswordChangeError('Passwords do not match')
+      return
+    }
+    if (settings.newPassword.length < 8) {
+      setPasswordChangeError('Password must be at least 8 characters')
+      return
+    }
+
+    try {
+      const response = await fetch('/api/auth/change-password', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${localStorage.getItem('verity_user_token') || localStorage.getItem('verity_reviewer_token') || localStorage.getItem('verity_business_token')}`
+        },
+        body: JSON.stringify({
+          currentPassword: settings.currentPassword,
+          newPassword: settings.newPassword
+        })
+      })
+
+      if (response.ok) {
+        setPasswordChangeMessage('✅ Password changed successfully!')
+        setSettings({
+          ...settings,
+          currentPassword: '',
+          newPassword: '',
+          confirmPassword: ''
+        })
+        setTimeout(() => {
+          setPasswordChangeMessage('')
+        }, 3000)
+      } else {
+        const error = await response.json()
+        setPasswordChangeError(error.message || 'Failed to change password')
+      }
+    } catch (error) {
+      setPasswordChangeError('Error changing password. Please try again.')
+      console.error('Password change error:', error)
+    }
+  }
+
+  const handleToggleSetting = (field) => {
+    handleSettingChange(field, !settings[field])
   }
 
   const getTrustScoreColor = (score) => {
@@ -87,91 +199,67 @@ function RightSidebar() {
   }
 
   return (
-    <RightSidebarContainer>
-      <div style={{ position: 'relative' }}>
-        <button
-          onClick={handleLeaderboardClick}
-          style={{
-            width: '100%',
-            padding: '1rem',
-            backgroundColor: '#14b8a6',
-            color: 'white',
-            border: 'none',
-            borderRadius: '0.75rem',
-            fontWeight: '700',
-            fontSize: '1rem',
-            cursor: 'pointer',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'space-between',
-            transition: 'all 0.2s',
-            boxShadow: '0 2px 8px rgba(20, 184, 166, 0.3)',
-          }}
-          onMouseEnter={(e) => {
-            e.currentTarget.style.backgroundColor = '#0d9488'
-            e.currentTarget.style.transform = 'translateY(-2px)'
-            e.currentTarget.style.boxShadow = '0 4px 12px rgba(20, 184, 166, 0.4)'
-          }}
-          onMouseLeave={(e) => {
-            e.currentTarget.style.backgroundColor = '#14b8a6'
-            e.currentTarget.style.transform = 'translateY(0)'
-            e.currentTarget.style.boxShadow = '0 2px 8px rgba(20, 184, 166, 0.3)'
-          }}
-        >
-          <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-            <Award size={20} />
-            Reviewer Leaderboard
-          </div>
-          {showLeaderboard ? <ChevronUp size={20} /> : <ChevronDown size={20} />}
-        </button>
+    <>
+      {/* Right Sidebar */}
+      <RightSidebarContainer $isOpen={isOpen}>
+        {/* Header with Logo */}
+        <LogoSection>
+          <RightSidebarHeader>
+            <ButtonsContainer>
+              <ReviewerButton 
+                onClick={toggleLeaderboard}
+                title="Reviewer Leaderboard"
+                $isActive={showLeaderboard}
+              >
+                <LogoBox>
+                  <Award size={24} />
+                </LogoBox>
+              </ReviewerButton>
+              <SettingsButton 
+                onClick={toggleSettings}
+                title="Settings"
+                $isActive={showSettings}
+              >
+                <LogoBox>
+                  <Settings size={24} />
+                </LogoBox>
+              </SettingsButton>
+            </ButtonsContainer>
+            {isOpen && (
+              <SidebarCloseButton 
+                onClick={() => {
+                  setIsOpen(false)
+                  setShowLeaderboard(false)
+                  setShowSettings(false)
+                }}
+                aria-label="Close sidebar"
+              >
+                <X size={18} />
+              </SidebarCloseButton>
+            )}
+          </RightSidebarHeader>
+        </LogoSection>
 
-        {showLeaderboard && (
-          <div style={{
-            position: 'absolute',
-            top: '100%',
-            left: 0,
-            right: 0,
-            marginTop: '0.5rem',
-            backgroundColor: 'white',
-            borderRadius: '0.75rem',
-            boxShadow: '0 10px 25px rgba(0, 0, 0, 0.15)',
-            zIndex: 1000,
-            border: '2px solid #14b8a6',
-            padding: '1.5rem',
-            maxHeight: '500px',
-            overflowY: 'auto'
-          }}>
-            <div style={{
-              fontSize: '0.875rem',
-              fontWeight: '700',
-              color: '#64748b',
-              marginBottom: '1rem',
-              textTransform: 'uppercase',
-              letterSpacing: '0.5px'
-            }}>
-              Top Reviewers ({leaderboard.length})
-            </div>
+        <Divider />
 
-            {/* Current User */}
-            {user?.role === 'Reviewer' && !loadingStats && (
-              <div style={{
-                display: 'flex',
-                flexDirection: 'column',
-                gap: '1rem',
-                padding: '1.25rem',
-                backgroundColor: '#f0fdfa',
-                borderRadius: '0.75rem',
-                border: '2px solid #14b8a6',
-                marginBottom: '1rem'
-              }}>
+        {/* Leaderboard Content */}
+        {showLeaderboard && isOpen && (
+          <LeaderboardContent>
+            <LeaderboardHeader>
+              <span>Top Reviewers ({leaderboard.length})</span>
+            </LeaderboardHeader>
+
+            {/* Current User Stats */}
+            {user?.role === 'Reviewer' && (
+              <CurrentUserCard>
                 <div style={{
                   display: 'flex',
                   alignItems: 'center',
                   gap: '0.75rem'
                 }}>
                   <div style={{
-                    width: '45px',
-                    height: '45px',
+                    width: '36px',
+                    height: '36px',
                     borderRadius: '50%',
                     backgroundColor: '#14b8a6',
                     color: 'white',
@@ -179,7 +267,7 @@ function RightSidebar() {
                     alignItems: 'center',
                     justifyContent: 'center',
                     fontWeight: '900',
-                    fontSize: '0.875rem',
+                    fontSize: '0.75rem',
                     flexShrink: 0
                   }}>
                     ⭐
@@ -194,85 +282,48 @@ function RightSidebar() {
                     }
                     alt={user?.fullName}
                     style={{
-                      width: '55px',
-                      height: '55px',
+                      width: '40px',
+                      height: '40px',
                       borderRadius: '50%',
                       objectFit: 'cover',
-                      border: '3px solid #14b8a6',
+                      border: '2px solid #14b8a6',
                       flexShrink: 0
                     }}
                   />
                   <div style={{ flex: 1, minWidth: 0 }}>
                     <div style={{
-                      fontSize: '1.125rem',
+                      fontSize: '0.875rem',
                       fontWeight: '700',
                       color: '#1f2937',
                       whiteSpace: 'nowrap',
                       overflow: 'hidden',
                       textOverflow: 'ellipsis'
                     }}>
-                      {user?.fullName} (You)
+                      {user?.fullName}
+                    </div>
+                    <div style={{
+                      fontSize: '1rem',
+                      fontWeight: '900',
+                      color: getTrustScoreColor(stats.accuracy),
+                    }}>
+                      {stats.accuracy}%
                     </div>
                   </div>
                 </div>
-                <div style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  gap: '0.5rem',
-                  paddingTop: '0.75rem',
-                  borderTop: '1px solid #99f6e4'
-                }}>
-                  <div style={{
-                    fontSize: '2rem',
-                    fontWeight: '900',
-                    color: getTrustScoreColor(stats.accuracy),
-                    lineHeight: 1
-                  }}>
-                    {stats.accuracy}%
-                  </div>
-                  <div style={{
-                    fontSize: '0.75rem',
-                    color: '#64748b',
-                    fontWeight: '600',
-                    textTransform: 'uppercase',
-                    letterSpacing: '0.5px'
-                  }}>
-                    Trust Score
-                  </div>
-                </div>
-              </div>
+              </CurrentUserCard>
             )}
 
             {/* Leaderboard List */}
-            {leaderboard.length > 0 ? (
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
-                {leaderboard.slice(0, 5).map((reviewer, idx) => (
-                  <div
-                    key={reviewer.id}
-                    style={{
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: '0.75rem',
-                      padding: '0.75rem',
-                      backgroundColor: '#f8fafc',
-                      borderRadius: '0.5rem',
-                      border: '1px solid #e2e8f0',
-                      transition: 'all 0.2s'
-                    }}
-                    onMouseEnter={(e) => {
-                      e.currentTarget.style.backgroundColor = '#f0fdfa'
-                      e.currentTarget.style.borderColor = '#14b8a6'
-                    }}
-                    onMouseLeave={(e) => {
-                      e.currentTarget.style.backgroundColor = '#f8fafc'
-                      e.currentTarget.style.borderColor = '#e2e8f0'
-                    }}
-                  >
+            {loadingLeaderboard ? (
+              <NoDataMessage>⏳ Loading...</NoDataMessage>
+            ) : leaderboard.length > 0 ? (
+              <LeaderboardList>
+                {leaderboard.slice(0, 10).map((reviewer, idx) => (
+                  <ReviewerItem key={reviewer.id}>
                     <div style={{
-                      fontSize: '1.5rem',
+                      fontSize: '1.25rem',
                       fontWeight: '900',
-                      minWidth: '30px'
+                      minWidth: '28px'
                     }}>
                       {getRankBadge(reviewer.rank)}
                     </div>
@@ -284,8 +335,8 @@ function RightSidebar() {
                     />
                     <div style={{ flex: 1, minWidth: 0 }}>
                       <div style={{
-                        fontSize: '0.875rem',
-                        fontWeight: '700',
+                        fontSize: '0.8125rem',
+                        fontWeight: '600',
                         color: '#1f2937',
                         whiteSpace: 'nowrap',
                         overflow: 'hidden',
@@ -294,50 +345,233 @@ function RightSidebar() {
                         {reviewer.fullName}
                       </div>
                       <div style={{
-                        fontSize: '0.7rem',
+                        fontSize: '0.65rem',
                         color: '#64748b'
                       }}>
-                        Score: {reviewer.trustScore}
+                        {reviewer.reviewsCompleted} reviews
                       </div>
                     </div>
                     <div style={{
                       fontSize: '0.75rem',
                       fontWeight: '700',
                       color: getTrustScoreColor(reviewer.trustScore),
-                      textAlign: 'right'
                     }}>
-                      {reviewer.reviewsCompleted} reviews
+                      {reviewer.trustScore}%
                     </div>
-                  </div>
+                  </ReviewerItem>
                 ))}
-              </div>
+              </LeaderboardList>
             ) : (
-              <div style={{
-                textAlign: 'center',
-                color: '#94a3b8',
-                fontSize: '0.875rem',
-                padding: '1rem'
-              }}>
-                {loadingLeaderboard ? '⏳ Loading reviewers...' : '📊 No reviewers yet'}
-              </div>
+              <NoDataMessage>📊 No reviewers yet</NoDataMessage>
             )}
-
-            {leaderboard.length > 5 && (
-              <div style={{
-                textAlign: 'center',
-                marginTop: '1rem',
-                paddingTop: '1rem',
-                borderTop: '1px solid #e2e8f0',
-                fontSize: '0.75rem',
-                color: '#64748b'
-              }}>
-                Showing top 5 of {leaderboard.length} reviewers · <a href="/leaderboard" style={{ color: '#14b8a6', textDecoration: 'none', fontWeight: '600' }}>View all</a>
-              </div>
-            )}
-          </div>
+          </LeaderboardContent>
         )}
-      </div>
-    </RightSidebarContainer>
+
+        {/* Settings Content */}
+        {showSettings && isOpen && (
+          <SettingsContent>
+            <SettingsSection>
+              <SettingLabel style={{ fontSize: '0.875rem', fontWeight: '700', marginBottom: '1rem' }}>
+                🔐 Security
+              </SettingLabel>
+
+              {/* Change Password */}
+              <SettingItem>
+                <div>
+                  <SettingLabel style={{ fontSize: '0.8125rem' }}>
+                    <Lock size={16} style={{ display: 'inline', marginRight: '0.5rem' }} />
+                    Change Password
+                  </SettingLabel>
+                  <SettingDescription>Update your account password</SettingDescription>
+                </div>
+              </SettingItem>
+
+              <SettingInput
+                type="password"
+                placeholder="Current password"
+                value={settings.currentPassword}
+                onChange={(e) => handleSettingChange('currentPassword', e.target.value)}
+              />
+              <SettingInput
+                type="password"
+                placeholder="New password"
+                value={settings.newPassword}
+                onChange={(e) => handleSettingChange('newPassword', e.target.value)}
+              />
+              <SettingInput
+                type="password"
+                placeholder="Confirm new password"
+                value={settings.confirmPassword}
+                onChange={(e) => handleSettingChange('confirmPassword', e.target.value)}
+              />
+
+              {passwordChangeError && (
+                <div style={{ color: '#ef4444', fontSize: '0.75rem', marginBottom: '0.5rem', fontWeight: '600' }}>
+                  ⚠️ {passwordChangeError}
+                </div>
+              )}
+              {passwordChangeMessage && (
+                <div style={{ color: '#10b981', fontSize: '0.75rem', marginBottom: '0.5rem', fontWeight: '600' }}>
+                  {passwordChangeMessage}
+                </div>
+              )}
+
+              <SettingButton onClick={handlePasswordChange}>
+                Update Password
+              </SettingButton>
+            </SettingsSection>
+
+            <Divider style={{ margin: '1rem 0' }} />
+
+            <SettingsSection>
+              <SettingLabel style={{ fontSize: '0.875rem', fontWeight: '700', marginBottom: '1rem' }}>
+                🔔 Notifications
+              </SettingLabel>
+
+              <SettingItem>
+                <div>
+                  <SettingLabel style={{ fontSize: '0.8125rem' }}>
+                    <Mail size={16} style={{ display: 'inline', marginRight: '0.5rem' }} />
+                    Email Notifications
+                  </SettingLabel>
+                  <SettingDescription>Receive updates via email</SettingDescription>
+                </div>
+                <ToggleSwitch
+                  checked={settings.emailNotifications}
+                  onChange={() => handleToggleSetting('emailNotifications')}
+                />
+              </SettingItem>
+
+              <SettingItem>
+                <div>
+                  <SettingLabel style={{ fontSize: '0.8125rem' }}>
+                    <Bell size={16} style={{ display: 'inline', marginRight: '0.5rem' }} />
+                    Push Notifications
+                  </SettingLabel>
+                  <SettingDescription>Receive browser notifications</SettingDescription>
+                </div>
+                <ToggleSwitch
+                  checked={settings.pushNotifications}
+                  onChange={() => handleToggleSetting('pushNotifications')}
+                />
+              </SettingItem>
+            </SettingsSection>
+
+            <Divider style={{ margin: '1rem 0' }} />
+
+            <SettingsSection>
+              <SettingLabel style={{ fontSize: '0.875rem', fontWeight: '700', marginBottom: '1rem' }}>
+                👤 Privacy
+              </SettingLabel>
+
+              <SettingItem>
+                <div>
+                  <SettingLabel style={{ fontSize: '0.8125rem' }}>
+                    <User size={16} style={{ display: 'inline', marginRight: '0.5rem' }} />
+                    Profile Visibility
+                  </SettingLabel>
+                  <SettingDescription>Who can see your profile</SettingDescription>
+                </div>
+                <select 
+                  value={settings.profileVisibility}
+                  onChange={(e) => handleSettingChange('profileVisibility', e.target.value)}
+                  style={{
+                    padding: '0.5rem',
+                    borderRadius: '0.375rem',
+                    border: '1px solid #e2e8f0',
+                    backgroundColor: 'white',
+                    fontSize: '0.8125rem',
+                    cursor: 'pointer'
+                  }}
+                >
+                  <option value="public">Public</option>
+                  <option value="friends">Friends Only</option>
+                  <option value="private">Private</option>
+                </select>
+              </SettingItem>
+
+              <SettingItem>
+                <div>
+                  <SettingLabel style={{ fontSize: '0.8125rem' }}>
+                    <Shield size={16} style={{ display: 'inline', marginRight: '0.5rem' }} />
+                    Two-Factor Authentication
+                  </SettingLabel>
+                  <SettingDescription>Add extra security to your account</SettingDescription>
+                </div>
+                <ToggleSwitch
+                  checked={settings.twoFactorAuth}
+                  onChange={() => handleToggleSetting('twoFactorAuth')}
+                />
+              </SettingItem>
+
+              <SettingItem>
+                <div>
+                  <SettingLabel style={{ fontSize: '0.8125rem' }}>
+                    📊 Data Collection
+                  </SettingLabel>
+                  <SettingDescription>Allow usage analytics</SettingDescription>
+                </div>
+                <ToggleSwitch
+                  checked={settings.dataCollection}
+                  onChange={() => handleToggleSetting('dataCollection')}
+                />
+              </SettingItem>
+            </SettingsSection>
+
+            <Divider style={{ margin: '1rem 0' }} />
+
+            <SettingsSection style={{ paddingBottom: '1rem' }}>
+              <SettingButton 
+                onClick={() => {
+                  // Handle logout
+                  localStorage.clear()
+                  window.location.href = '/login'
+                }}
+                style={{
+                  backgroundColor: '#ef4444',
+                  color: 'white',
+                  marginTop: '0.5rem'
+                }}
+              >
+                <LogOut size={16} style={{ display: 'inline', marginRight: '0.5rem' }} />
+                Sign Out
+              </SettingButton>
+            </SettingsSection>
+          </SettingsContent>
+        )}
+      </RightSidebarContainer>
+
+      {/* Backdrop for Leaderboard */}
+      {showLeaderboard && (
+        <div 
+          style={{
+            position: 'fixed',
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            backgroundColor: 'rgba(0, 0, 0, 0.4)',
+            zIndex: 999,
+            display: 'none'
+          }}
+          onClick={closeLeaderboard}
+        />
+      )}
+
+      <style>{`
+        @keyframes slideIn {
+          from {
+            transform: translateX(100%);
+            opacity: 0;
+          }
+          to {
+            transform: translateX(0);
+            opacity: 1;
+          }
+        }
+      `}</style>
+    </>
   )
 }
+
 export default RightSidebar

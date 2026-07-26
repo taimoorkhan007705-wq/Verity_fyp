@@ -32,10 +32,26 @@ export const login = async (credentials) => {
       },
       body: JSON.stringify(credentials),
     });
-    const data = await response.json();
-    if (!response.ok) {
-      throw new Error(data.message || 'Login failed');
+    
+    // Check if response is empty
+    if (!response.body) {
+      throw new Error('Empty response from server');
     }
+    
+    let data;
+    try {
+      data = await response.json();
+    } catch (parseError) {
+      console.error('[API] JSON Parse Error:', parseError);
+      console.error('[API] Response status:', response.status);
+      console.error('[API] Response statusText:', response.statusText);
+      throw new Error(`Failed to parse response: ${parseError.message}`);
+    }
+    
+    if (!response.ok) {
+      throw new Error(data.message || `Login failed (${response.status})`);
+    }
+    
     if (data.user && data.user.fullName) {
       const nameParts = data.user.fullName.trim().split(/\s+/);
       const uniqueParts = [...new Set(nameParts.map(part => part.toLowerCase()))];
@@ -43,15 +59,18 @@ export const login = async (credentials) => {
         part.charAt(0).toUpperCase() + part.slice(1).toLowerCase()
       ).join(' ');
     }
+    
     console.log('Login API - Full response:', data);
     console.log('Login API - User object:', data.user);
     console.log('Login API - Avatar field:', data.user?.avatar);
+    
     if (data.token) {
       saveAuthSession(data.user?.role || credentials.role || 'User', data.token, data.user);
       console.log('Login API - Stored in scoped localStorage:', JSON.parse(localStorage.getItem('verity_' + (data.user?.role || credentials.role || 'user').toLowerCase() + '_user')));
     }
     return data;
   } catch (error) {
+    console.error('[API] Login error:', error);
     throw error;
   }
 };

@@ -1,7 +1,8 @@
 import { useState, useEffect } from 'react'
 import { Award, TrendingUp, ArrowLeft, CheckCircle, XCircle, Clock, Target } from 'lucide-react'
 import { useNavigate } from 'react-router-dom'
-import { getCurrentUser, getReviewerStats } from '../../services/api'
+import { getCurrentUser, getReviewerStats, getReviewerLeaderboard } from '../../services/api'
+import ReviewerLeaderboard from './ReviewerLeaderboard'
 function ReviewerDashboard() {
   const user = getCurrentUser()
   const navigate = useNavigate()
@@ -330,6 +331,11 @@ function ReviewerDashboard() {
           <div style={{ width: '12px', height: '12px', backgroundColor: '#ef4444', borderRadius: '2px' }} />
           Below 70% Needs Improvement
         </div>
+      </div>
+
+      {/* Reviewer Leaderboard Section */}
+      <div style={{ marginTop: '2rem' }}>
+        <ReviewerLeaderboard />
       </div>
     </div>
   )

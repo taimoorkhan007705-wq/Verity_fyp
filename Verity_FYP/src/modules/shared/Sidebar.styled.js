@@ -247,6 +247,16 @@ export const Profile_Button = styled(BaseNavButton)`
     background-color: ${(props) => (props.$isActive ? props.theme.colors.primaryLight : props.theme.colors.surfaceHover)};
   }
 `;
+
+export const Settings_Button = styled(BaseNavButton)`
+  color: ${(props) => (props.$isActive ? props.theme.colors.primaryHover : props.theme.colors.textSecondary)};
+  background-color: ${(props) => (props.$isActive ? props.theme.colors.primaryLight : "transparent")};
+  font-weight: ${(props) => (props.$isActive ? "600" : "400")};
+  &:hover {
+    background-color: ${(props) => (props.$isActive ? props.theme.colors.primaryLight : props.theme.colors.surfaceHover)};
+  }
+  cursor: pointer;
+`;
 export const UserProfileSection = styled.div`
   position: sticky;
   bottom: 0;

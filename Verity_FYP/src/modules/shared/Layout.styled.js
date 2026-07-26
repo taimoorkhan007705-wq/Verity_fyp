@@ -13,6 +13,12 @@ export const LayoutContainer = styled.div`
   @media (min-width: 769px) {
     flex-direction: row;
   }
+
+  @media (min-width: 1024px) {
+    display: grid;
+    grid-template-columns: auto 1fr auto;
+    grid-template-rows: 1fr;
+  }
 `;
 
 export const HeaderContainer = styled.div`

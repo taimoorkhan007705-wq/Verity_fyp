@@ -13,21 +13,24 @@ export const protect = async (req, res, next) => {
       token = req.headers.authorization.split(' ')[1]
     }
     if (!token) {
+      console.log('[Auth] No token provided')
       return res.status(401).json({ success: false, message: 'Not authorized, no token' })
     }
     const decoded = jwt.verify(token, process.env.JWT_SECRET)
-        const requestedRole = decoded.role
+    const requestedRole = decoded.role
     const Model = getModelByRole(requestedRole)
     const user = await Model.findById(decoded.id).select('-password')
 
     if (!user) {
-            return res.status(401).json({ success: false, message: 'User not found' })
+      console.log('[Auth] User not found for ID:', decoded.id)
+      return res.status(401).json({ success: false, message: 'User not found' })
     }
 
-        req.user = user
+    req.user = user
     next()
   } catch (error) {
-        res.status(401).json({ success: false, message: 'Not authorized, token failed' })
+    console.error('[Auth] Protect middleware error:', error.message)
+    res.status(401).json({ success: false, message: 'Not authorized, token failed', error: error.message })
   }
 }
 export const restrictTo = (...roles) => {

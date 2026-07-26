@@ -26,8 +26,11 @@ const Login = () => {
     setError('')
     setLoading(true)
     try {
+      console.log('[Login] Starting login with credentials:', { email: formData.email, role: formData.role })
       const response = await login(formData)
-      console.log('Login response:', response)
+      console.log('[Login] Login successful, response:', response)
+      console.log('[Login] User data:', response.user)
+      console.log('[Login] Token received:', response.token ? 'Yes (length: ' + response.token.length + ')' : 'No')
       
       // Handle "Remember Me" checkbox
       if (rememberMe) {
@@ -38,20 +41,20 @@ const Login = () => {
         localStorage.removeItem('rememberEmail')
       }
       
+      console.log('[Login] Auth session saved to localStorage')
+      console.log('[Login] Token in localStorage:', localStorage.getItem('token') ? 'Yes' : 'No')
+      console.log('[Login] Role-scoped token:', localStorage.getItem('verity_' + (response.user.role || 'user').toLowerCase() + '_token') ? 'Yes' : 'No')
+      
       alert(`Welcome back, ${response.user.fullName}!`)
-      // Use setTimeout to ensure localStorage is written before redirect
+      
+      // Use a full page reload to let App.jsx re-initialize with the new token
+      console.log('[Login] Reloading page in 500ms...')
       setTimeout(() => {
-        if (response.user.role === 'Admin') {
-          window.location.href = '/admin'
-        } else if (response.user.role === 'Business') {
-          window.location.href = '/dashboard'
-        } else if (response.user.role === 'Reviewer') {
-          window.location.href = '/review-center'
-        } else {
-          window.location.href = '/feed'
-        }
-      }, 100)
+        console.log('[Login] Executing page reload')
+        window.location.reload()
+      }, 500)
     } catch (error) {
+      console.error('[Login] Login error:', error)
       setError(error.message || 'Login failed')
     } finally {
       setLoading(false)
@@ -158,7 +161,7 @@ const Login = () => {
               />
               <RememberMeLabel htmlFor="rememberMe">Remember me</RememberMeLabel>
               <SignUpLink 
-                onClick={() => navigate('/forgot-password')}
+                onClick={() => navigate('/forgot-password-otp')}
                 style={{ marginLeft: 'auto' }}
               >
                 Forgot password?

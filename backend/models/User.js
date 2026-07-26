@@ -159,6 +159,59 @@ userSchema.add({
   resetTokenExpiry: {
     type: Date,
     default: undefined
+  },
+  // OTP & Password Reset Fields
+  passwordReset: {
+    otp: {
+      type: String,
+      default: null
+    },
+    otpCreatedAt: {
+      type: Date,
+      default: null
+    },
+    otpAttempts: {
+      type: Number,
+      default: 0
+    },
+    isOTPVerified: {
+      type: Boolean,
+      default: false
+    }
+  },
+  // 2FA - Authenticator App
+  twoFactor: {
+    isEnabled: {
+      type: Boolean,
+      default: false
+    },
+    secret: {
+      type: String,
+      default: null
+    },
+    backupCodes: [{
+      code: String,
+      used: { type: Boolean, default: false }
+    }],
+    enabledAt: {
+      type: Date,
+      default: null
+    }
+  },
+  // Email Configuration - for sending OTP from user's own email
+  emailConfig: {
+    email: {
+      type: String,
+      default: null
+    },
+    password: {
+      type: String,
+      default: null
+    },
+    configuredAt: {
+      type: Date,
+      default: null
+    }
   }
 });
 userSchema.pre('save', async function(next) {

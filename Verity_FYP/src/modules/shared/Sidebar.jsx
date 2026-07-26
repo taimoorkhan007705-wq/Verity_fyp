@@ -39,6 +39,7 @@ import {
   Discover_Button,
   CreatePost_Button,
   Profile_Button,
+  Settings_Button,
   UserProfileSection,
   UserProfileButton,
   UserInfo,
@@ -86,6 +87,14 @@ function Sidebar({ isOpen, setsidebarOpen }) {
     apiLogout()
     navigate('/')
     window.location.reload() // Reload to clear state
+  }
+
+  const handleSettingsClick = () => {
+    // Signal RightSidebar to open settings
+    localStorage.setItem('openRightSidebarSettings', 'true')
+    // Trigger a custom event that RightSidebar can listen to
+    window.dispatchEvent(new Event('openSettings'))
+    handleMenuItemClick()
   }
   const isFeedActive = location.pathname === '/feed' || location.pathname === '/'
   const isMessagesActive = location.pathname.startsWith('/messages')
@@ -154,6 +163,10 @@ function Sidebar({ isOpen, setsidebarOpen }) {
                 <User />
                 <span>Profile</span>
               </Profile_Button>
+              <Settings_Button as="button" $isActive={false} $isOpen={isOpen} onClick={handleSettingsClick}>
+                <Settings />
+                <span>Settings</span>
+              </Settings_Button>
             </>
           )}
           {isAdmin && (
@@ -188,6 +201,10 @@ function Sidebar({ isOpen, setsidebarOpen }) {
               <Profile_Button to="/profile" $isActive={isProfileActive} $isOpen={isOpen} onClick={handleMenuItemClick}>
                 <User /><span>Profile</span>
               </Profile_Button>
+              <Settings_Button as="button" $isActive={false} $isOpen={isOpen} onClick={handleSettingsClick}>
+                <Settings />
+                <span>Settings</span>
+              </Settings_Button>
             </>
           )}
           {}

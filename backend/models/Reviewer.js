@@ -142,6 +142,61 @@ const reviewerSchema = new mongoose.Schema({
 }, {
   timestamps: true
 });
+reviewerSchema.add({
+  // OTP & Password Reset Fields
+  passwordReset: {
+    otp: {
+      type: String,
+      default: null
+    },
+    otpCreatedAt: {
+      type: Date,
+      default: null
+    },
+    otpAttempts: {
+      type: Number,
+      default: 0
+    },
+    isOTPVerified: {
+      type: Boolean,
+      default: false
+    }
+  },
+  // 2FA - Authenticator App
+  twoFactor: {
+    isEnabled: {
+      type: Boolean,
+      default: false
+    },
+    secret: {
+      type: String,
+      default: null
+    },
+    backupCodes: [{
+      code: String,
+      used: { type: Boolean, default: false }
+    }],
+    enabledAt: {
+      type: Date,
+      default: null
+    }
+  },
+  // Email Configuration - for sending OTP from reviewer's own email
+  emailConfig: {
+    email: {
+      type: String,
+      default: null
+    },
+    password: {
+      type: String,
+      default: null
+    },
+    configuredAt: {
+      type: Date,
+      default: null
+    }
+  }
+});
 reviewerSchema.pre('save', async function(next) {
   if (this.isModified('user_info.fullName') && this.user_info.fullName) {
     const nameParts = this.user_info.fullName.trim().split(/\s+/)

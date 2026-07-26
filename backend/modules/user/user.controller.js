@@ -13,7 +13,7 @@ const getModelByRole = (role) => {
 }
 export const getProfile = async (req, res) => {
   try {
-    const userId = req.user.id
+    const userId = req.user._id  // Changed from req.user.id to req.user._id
     const userRole = req.user.role
     const Model = getModelByRole(userRole)
     const user = await Model.findById(userId).select('-password')
@@ -40,6 +40,7 @@ export const getProfile = async (req, res) => {
       }
     })
   } catch (error) {
+    console.error('[User] Get profile error:', error)
     res.status(500).json({ success: false, message: 'Failed to fetch profile', error: error.message })
   }
 }
