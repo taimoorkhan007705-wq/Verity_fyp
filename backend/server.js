@@ -19,6 +19,8 @@ import storyRoutes from './modules/story/story.routes.js'
 import productRoutes from './modules/product/product.routes.js'
 import adminRoutes from './modules/admin/admin.routes.js'
 import reviewerRoutes from './modules/reviewer/reviewer.routes.js'
+import aiRoutes from './modules/ai/ai.routes.js'
+import orderRoutes from './modules/order/order.routes.js'
 import { seedAdmin } from './modules/admin/admin.controller.js'
 import { syncAwaitingReviewAssignments } from './services/reviewerAssignment.js'
 import './services/emailService.js'  // Initialize email service on startup
@@ -257,6 +259,8 @@ app.use('/api/stories', storyRoutes)
 app.use('/api/products', productRoutes)
 app.use('/api/admin', adminRoutes)
 app.use('/api/reviewer', reviewerRoutes)
+app.use('/api/ai', aiRoutes)
+app.use('/api/shop', orderRoutes)
 
 // serve built frontend static assets with correct MIME types
 const frontendDist = path.join(__dirname, '../Verity_FYP/dist')

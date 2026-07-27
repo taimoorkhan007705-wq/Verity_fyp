@@ -536,3 +536,58 @@ export const markNotificationsRead = async (req, res) => {
 }
 
 
+
+// ─── Payment Methods (Business only) ───────────────────────────────────────
+
+export const getPaymentMethods = async (req, res) => {
+  try {
+    if (req.user.role !== 'Business') {
+      return res.status(403).json({ success: false, message: 'Only businesses can access payment methods' })
+    }
+    const business = await Business.findById(req.user.id).select('payment_methods')
+    if (!business) return res.status(404).json({ success: false, message: 'Business not found' })
+
+    res.json({ success: true, payment_methods: business.payment_methods || {} })
+  } catch (error) {
+    res.status(500).json({ success: false, message: 'Failed to fetch payment methods', error: error.message })
+  }
+}
+
+export const updatePaymentMethods = async (req, res) => {
+  try {
+    if (req.user.role !== 'Business') {
+      return res.status(403).json({ success: false, message: 'Only businesses can update payment methods' })
+    }
+    const business = await Business.findById(req.user.id)
+    if (!business) return res.status(404).json({ success: false, message: 'Business not found' })
+
+    const { easypaisa, jazzcash, bankTransfer, creditCard, cashOnDelivery } = req.body
+
+    if (!business.payment_methods) business.payment_methods = {}
+
+    if (easypaisa !== undefined) business.payment_methods.easypaisa = easypaisa
+    if (jazzcash !== undefined) business.payment_methods.jazzcash = jazzcash
+    if (bankTransfer !== undefined) business.payment_methods.bankTransfer = bankTransfer
+    if (creditCard !== undefined) business.payment_methods.creditCard = creditCard
+    if (cashOnDelivery !== undefined) business.payment_methods.cashOnDelivery = cashOnDelivery
+
+    business.markModified('payment_methods')
+    await business.save()
+
+    res.json({ success: true, message: 'Payment methods updated successfully', payment_methods: business.payment_methods })
+  } catch (error) {
+    res.status(500).json({ success: false, message: 'Failed to update payment methods', error: error.message })
+  }
+}
+
+export const getBusinessPaymentMethods = async (req, res) => {
+  try {
+    const { businessId } = req.params
+    const business = await Business.findById(businessId).select('payment_methods user_info.fullName')
+    if (!business) return res.status(404).json({ success: false, message: 'Business not found' })
+
+    res.json({ success: true, payment_methods: business.payment_methods || {}, businessName: business.user_info?.fullName })
+  } catch (error) {
+    res.status(500).json({ success: false, message: 'Failed to fetch payment methods', error: error.message })
+  }
+}

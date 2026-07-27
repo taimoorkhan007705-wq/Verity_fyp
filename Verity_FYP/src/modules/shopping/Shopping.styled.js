@@ -193,29 +193,30 @@ export const StatItem = styled.div`
 `
 export const ProductActions = styled.div`
   display: flex;
-  gap: 0.5rem;
-  @media (max-width: 640px) {
-    flex-direction: column;
-  }
+  gap: 0.375rem;
+  flex-wrap: wrap;
 `
 export const LikeButton = styled.button`
   flex: 1;
-  padding: 0.5rem;
+  min-width: 0;
+  padding: 0.5rem 0.25rem;
   border: 2px solid #e5e7eb;
   background: white;
   color: #6b7280;
   border-radius: 6px;
   font-weight: 600;
-  font-size: 0.8rem;
+  font-size: 0.75rem;
   cursor: pointer;
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 0.375rem;
+  gap: 0.25rem;
   transition: all 0.2s;
+  white-space: nowrap;
   svg {
-    width: 16px;
-    height: 16px;
+    width: 14px;
+    height: 14px;
+    flex-shrink: 0;
   }
   &:hover {
     border-color: #ef4444;
@@ -225,46 +226,56 @@ export const LikeButton = styled.button`
 `
 export const BuyButton = styled.button`
   flex: 1;
-  padding: 0.5rem;
+  min-width: 0;
+  padding: 0.5rem 0.25rem;
   border: 2px solid #10b981;
   background: #10b981;
   color: white;
   border-radius: 6px;
-  font-weight: 600;
-  font-size: 0.8rem;
+  font-weight: 700;
+  font-size: 0.75rem;
   cursor: pointer;
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 0.375rem;
+  gap: 0.25rem;
   transition: all 0.2s;
+  white-space: nowrap;
   svg {
-    width: 16px;
-    height: 16px;
+    width: 14px;
+    height: 14px;
+    flex-shrink: 0;
   }
   &:hover {
     background: #059669;
     border-color: #059669;
   }
+  &:disabled {
+    opacity: 0.7;
+    cursor: not-allowed;
+  }
 `
 export const MessageButton = styled.button`
   flex: 1;
-  padding: 0.5rem;
+  min-width: 0;
+  padding: 0.5rem 0.25rem;
   border: 2px solid #14b8a6;
   background: #14b8a6;
   color: white;
   border-radius: 6px;
   font-weight: 600;
-  font-size: 0.8rem;
+  font-size: 0.75rem;
   cursor: pointer;
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 0.375rem;
+  gap: 0.25rem;
   transition: all 0.2s;
+  white-space: nowrap;
   svg {
-    width: 16px;
-    height: 16px;
+    width: 14px;
+    height: 14px;
+    flex-shrink: 0;
   }
   &:hover {
     background: #0d9488;

@@ -18,6 +18,9 @@ import BusinessDashboard from './modules/business/BusinessDashboard'
 import Profile from './modules/profile/Profile'
 import EditProfile from './modules/profile/EditProfile'
 import Shopping from './modules/shopping/Shopping'
+import ProductDetail from './modules/shopping/ProductDetail'
+import Cart from './modules/shopping/Cart'
+import MyOrders from './modules/shopping/MyOrders'
 import Layout from './modules/shared/Layout'
 import ReviewerLayout from './modules/shared/ReviewerLayout'
 import { logout } from './services/api'
@@ -138,6 +141,9 @@ function AppContent() {
             <Route index element={<Feed />} />
             <Route path="feed" element={<Feed />} />
             <Route path="shopping" element={<Shopping />} />
+            <Route path="shopping/:productId" element={<ProductDetail />} />
+            <Route path="cart" element={<Cart />} />
+            <Route path="my-orders" element={<MyOrders />} />
             <Route path="create-post" element={<CreatePost />} />
             <Route path="connections" element={<Connections />} />
             <Route path="discover" element={<Connections />} />
@@ -155,8 +161,7 @@ function AppContent() {
           <Route path="/dashboard" element={<BusinessDashboard onLogout={handleLogout} />} />
           <Route path="/review-center" element={<ReviewCenter />} />
           <Route path="*" element={<Navigate to="/dashboard" replace />} />
-        </Routes>
-      ) : user.role === 'Reviewer' ? (
+        </Routes>      ) : user.role === 'Reviewer' ? (
         <Routes>
           <Route path="/" element={<ReviewerLayout onLogout={handleLogout} />}>
             <Route index element={<Navigate to="/review-center" replace />} />
@@ -165,6 +170,9 @@ function AppContent() {
             <Route path="all-reviewers" element={<ReviewerManagement />} />
             <Route path="feed" element={<Feed />} />
             <Route path="shopping" element={<Shopping />} />
+            <Route path="shopping/:productId" element={<ProductDetail />} />
+            <Route path="cart" element={<Cart />} />
+            <Route path="my-orders" element={<MyOrders />} />
             <Route path="create-post" element={<CreatePost />} />
             <Route path="connections" element={<Connections />} />
             <Route path="discover" element={<Connections />} />
@@ -181,6 +189,9 @@ function AppContent() {
             <Route index element={<Feed />} />
             <Route path="feed" element={<Feed />} />
             <Route path="shopping" element={<Shopping />} />
+            <Route path="shopping/:productId" element={<ProductDetail />} />
+            <Route path="cart" element={<Cart />} />
+            <Route path="my-orders" element={<MyOrders />} />
             <Route path="create-post" element={<CreatePost />} />
             <Route path="connections" element={<Connections />} />
             <Route path="discover" element={<Connections />} />

@@ -205,6 +205,36 @@ const businessSchema = new mongoose.Schema({
       type: Date,
       default: null
     }
+  },
+
+  // Payment Methods - how buyers can pay this business
+  payment_methods: {
+    easypaisa: {
+      enabled: { type: Boolean, default: false },
+      accountNumber: { type: String, default: '' },
+      accountName: { type: String, default: '' }
+    },
+    jazzcash: {
+      enabled: { type: Boolean, default: false },
+      accountNumber: { type: String, default: '' },
+      accountName: { type: String, default: '' }
+    },
+    bankTransfer: {
+      enabled: { type: Boolean, default: false },
+      bankName: { type: String, default: '' },
+      accountTitle: { type: String, default: '' },
+      accountNumber: { type: String, default: '' },
+      iban: { type: String, default: '' },
+      branchCode: { type: String, default: '' }
+    },
+    creditCard: {
+      enabled: { type: Boolean, default: false },
+      instructions: { type: String, default: '' }
+    },
+    cashOnDelivery: {
+      enabled: { type: Boolean, default: false },
+      areas: { type: String, default: '' }
+    }
   }
 }, {
   timestamps: true

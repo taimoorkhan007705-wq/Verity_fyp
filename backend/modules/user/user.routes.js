@@ -1,5 +1,5 @@
 import express from 'express'
-import { getProfile, updateProfile, getUserById, deleteUser, getAllUsers, sendConnectionRequest, acceptRequest, rejectRequest, getPendingRequests, getConnections, getMessages, sendMessage, getConversations, getBadgeCounts, markRejectionsRead, getRecentNotifications, markNotificationsRead } from './user.controller.js'
+import { getProfile, updateProfile, getUserById, deleteUser, getAllUsers, sendConnectionRequest, acceptRequest, rejectRequest, getPendingRequests, getConnections, getMessages, sendMessage, getConversations, getBadgeCounts, markRejectionsRead, getRecentNotifications, markNotificationsRead, getPaymentMethods, updatePaymentMethods, getBusinessPaymentMethods } from './user.controller.js'
 import { protect } from '../../middleware/auth.js'
 import { uploadProfile } from '../../middleware/upload.js'
 const router = express.Router()
@@ -29,6 +29,11 @@ router.get('/badges', protect, getBadgeCounts)
 router.post('/badges/rejections/read', protect, markRejectionsRead)
 router.get('/notifications', protect, getRecentNotifications)
 router.post('/notifications/read', protect, markNotificationsRead)
+
+// Payment Methods
+router.get('/payment-methods', protect, getPaymentMethods)
+router.put('/payment-methods', protect, updatePaymentMethods)
+router.get('/payment-methods/:businessId', getBusinessPaymentMethods)
 
 export default router
 
