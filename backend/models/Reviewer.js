@@ -85,6 +85,18 @@ const reviewerSchema = new mongoose.Schema({
     isActive: {
       type: Boolean,
       default: true
+    },
+    isBlocked: {
+      type: Boolean,
+      default: false
+    },
+    blockedAt: {
+      type: Date,
+      default: null
+    },
+    blockedReason: {
+      type: String,
+      default: ''
     }
   },
   reviewer_stats: {

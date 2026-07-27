@@ -1,6 +1,6 @@
 import express from 'express'
 import { protect, restrictTo } from '../../middleware/auth.js'
-import { getStats, getAllUsers, deleteUser, toggleBan, toggleVerify, sendWarning, promoteToReviewer, getAllPosts, getAdminFeed, deletePost, getReviewerLeaderboard } from './admin.controller.js'
+import { getStats, getAllUsers, deleteUser, toggleBan, toggleVerify, sendWarning, promoteToReviewer, getAllPosts, getAdminFeed, deletePost, getReviewerLeaderboard, getReviewerRequests, approveReviewerRequest, rejectReviewerRequest, submitReviewerRequest, checkReviewerRequestStatus, createReviewerRequestOnSignup, blockUser, unblockUser } from './admin.controller.js'
 
 const router = express.Router()
 
@@ -26,8 +26,14 @@ router.get('/test-reviewers', async (req, res) => {
 
 router.get('/reviewers/leaderboard', getReviewerLeaderboard)
 
+// ── User routes (authenticated users can submit/check requests) ──────────────────────
+router.use(protect)
+router.post('/reviewer-request/submit', submitReviewerRequest)
+router.post('/reviewer-request/signup', createReviewerRequestOnSignup)
+router.get('/reviewer-request/status', checkReviewerRequestStatus)
+
 // ── Admin-only routes ──────────────────────────────────────
-router.use(protect, restrictTo('Admin'))
+router.use(restrictTo('Admin'))
 
 router.get('/stats', getStats)
 router.get('/users', getAllUsers)
@@ -35,7 +41,12 @@ router.delete('/users/:userId', deleteUser)
 router.patch('/users/:userId/ban', toggleBan)
 router.patch('/users/:userId/verify', toggleVerify)
 router.post('/users/:userId/warn', sendWarning)
+router.post('/users/:userId/block', blockUser)
+router.post('/users/:userId/unblock', unblockUser)
 router.post('/users/:userId/promote', promoteToReviewer)
+router.get('/reviewer-requests', getReviewerRequests)
+router.post('/reviewer-requests/:userId/approve', approveReviewerRequest)
+router.post('/reviewer-requests/:userId/reject', rejectReviewerRequest)
 router.get('/posts', getAllPosts)
 router.get('/feed', getAdminFeed)
 router.delete('/posts/:postId', deletePost)

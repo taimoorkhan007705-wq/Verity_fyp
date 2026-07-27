@@ -110,15 +110,39 @@ function PostItem({ post, onRemove }) {
     e.preventDefault()
     if (!guard()) return
     if (!commentText.trim() || submitting) return
+    
     setSubmitting(true)
-    const res = await fetch(`${API}/posts/${post._id}/comment`, {
-      method: 'POST',
-      headers: { Authorization: `Bearer ${token()}`, 'Content-Type': 'application/json' },
-      body: JSON.stringify({ text: commentText.trim() })
-    })
-    const data = await res.json()
-    if (data.success) { setComments(data.comments); setCommentText('') }
-    setSubmitting(false)
+    try {
+      const res = await fetch(`${API}/posts/${post._id}/comment`, {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${token()}`, 'Content-Type': 'application/json' },
+        body: JSON.stringify({ text: commentText.trim() })
+      })
+      
+      if (!res.ok) {
+        console.error('Comment API error:', res.status, res.statusText)
+        alert(`Error: ${res.statusText}`)
+        setSubmitting(false)
+        return
+      }
+      
+      const data = await res.json()
+      console.log('Comment response:', data)
+      
+      if (data.success) { 
+        setComments(data.comments || [])
+        setCommentText('')
+        toast?.success('Comment posted successfully')
+      } else {
+        console.error('Comment failed:', data.message)
+        alert(data.message || 'Failed to post comment')
+      }
+    } catch (error) {
+      console.error('Comment error:', error)
+      alert('Failed to post comment: ' + error.message)
+    } finally {
+      setSubmitting(false)
+    }
   }
 
   const handleShare = async () => {

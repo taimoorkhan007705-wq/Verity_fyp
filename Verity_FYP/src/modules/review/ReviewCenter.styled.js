@@ -4,11 +4,12 @@ import styled from "styled-components";
 export const ReviewCenterContainer = styled.div`
   display: flex;
   flex-direction: column;
-  min-height: 100vh;
+  height: 100vh;
   background-color: ${props => props.theme.colors.background};
   overflow: hidden;
   @media (max-width: 900px) {
-    overflow: auto;
+    height: 100vh;
+    overflow: hidden;
   }
 `;
 
@@ -160,18 +161,19 @@ export const ContentWrapper = styled.div`
   display: flex;
   flex: 1;
   overflow: hidden;
-  gap: 1rem;
+  gap: 0;
   min-width: 0;
+  flex-direction: row-reverse;
   @media (max-width: 900px) {
-    flex-direction: column;
+    flex-direction: column-reverse;
   }
 `;
 
 export const ReviewSidebar = styled.div`
-  width: 250px;
-  min-width: 250px;
+  width: 280px;
+  min-width: 280px;
   background-color: ${props => props.theme.colors.surface};
-  border-right: 1px solid ${props => props.theme.colors.border};
+  border-left: 1px solid ${props => props.theme.colors.border};
   padding: 1.5rem;
   overflow-y: auto;
   min-height: 0;
@@ -179,8 +181,8 @@ export const ReviewSidebar = styled.div`
   @media (max-width: 900px) {
     width: 100%;
     min-width: unset;
-    border-right: none;
-    border-bottom: 1px solid ${props => props.theme.colors.border};
+    border-left: none;
+    border-top: 1px solid ${props => props.theme.colors.border};
     display: ${props => props.$isOpen ? 'block' : 'none'};
     padding: 1.5rem;
   }
@@ -241,9 +243,7 @@ export const MenuBadge = styled.span`
 export const MainContent = styled.div`
   flex: 1;
   overflow-y: auto;
-  padding: 2rem;
-  max-width: 1200px;
-  margin: 0 auto;
+  padding: 1.5rem;
   width: 100%;
   box-sizing: border-box;
   min-width: 0;
@@ -306,27 +306,33 @@ export const FilterSelect = styled.select`
 export const ReviewCardsGrid = styled.div`
   display: flex;
   flex-direction: column;
-  gap: 1.5rem;
+  gap: 0.75rem;
   min-width: 0;
 `;
 
 export const ReviewCard = styled.div`
   background: ${props => props.theme.colors.surface};
-  border-radius: 1rem;
-  padding: 1.5rem;
+  border-radius: 0.75rem;
+  padding: 0.75rem;
   box-shadow: 0 2px 8px ${props => props.theme.colors.shadow};
   border-left: 4px solid ${props => {
     if (props.$risk === 'high') return props.theme.colors.error;
     if (props.$risk === 'medium') return props.theme.colors.warning;
     return props.theme.colors.success;
   }};
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  overflow: hidden;
 `;
 
 export const ReviewCardHeader = styled.div`
   display: flex;
   justify-content: space-between;
   align-items: flex-start;
-  margin-bottom: 1rem;
+  margin-bottom: 0.5rem;
+  min-width: 0;
+  width: 100%;
 `;
 
 export const AuthorInfo = styled.div`
@@ -347,7 +353,7 @@ export const AuthorDetails = styled.div``;
 export const AuthorName = styled.div`
   font-weight: 600;
   color: ${props => props.theme.colors.textPrimary};
-  font-size: 1rem;
+  font-size: 0.875rem;
 `;
 
 export const AuthorMeta = styled.div`
@@ -374,22 +380,28 @@ export const RiskBadge = styled.div`
 `;
 
 export const PostContent = styled.div`
-  margin-bottom: 1rem;
+  margin-bottom: 0.5rem;
+  width: 100%;
+  min-width: 0;
+  overflow: hidden;
+  box-sizing: border-box;
 `;
 
 export const PostText = styled.p`
   color: ${props => props.theme.colors.textPrimary};
-  font-size: 1rem;
-  line-height: 1.6;
-  margin-bottom: 1rem;
+  font-size: 0.875rem;
+  line-height: 1.4;
+  margin-bottom: 0.5rem;
 `;
 
 export const PostImage = styled.img`
   width: 100%;
-  max-height: 400px;
-  object-fit: cover;
+  height: auto;
+  max-height: 200px;
+  object-fit: contain;
   border-radius: 0.75rem;
-  margin-bottom: 1rem;
+  margin: 0.5rem 0;
+  flex-shrink: 0;
 `;
 
 export const AIAnalysisSection = styled.div`
@@ -500,10 +512,12 @@ export const AIIssueItem = styled.li`
 
 export const ActionButtonsRow = styled.div`
   display: flex;
-  gap: 1rem;
-  margin-top: 1rem;
+  gap: 0.5rem;
+  margin-top: auto;
   flex-wrap: wrap;
   min-width: 0;
+  padding-top: 0.5rem;
+  border-top: 1px solid ${props => props.theme.colors.border};
 `;
 
 export const HeaderButton = styled.button`
@@ -551,12 +565,12 @@ export const ContentMessage = styled.div`
 
 export const ApproveButton = styled.button`
   flex: 1;
-  padding: 0.75rem 1.5rem;
+  padding: 0.5rem 1rem;
   background: linear-gradient(135deg, ${props => props.theme.colors.success} 0%, #059669 100%);
   border: none;
   border-radius: 0.75rem;
   color: white;
-  font-size: 1rem;
+  font-size: 0.875rem;
   font-weight: 600;
   cursor: pointer;
   transition: all 0.2s;
@@ -572,12 +586,12 @@ export const ApproveButton = styled.button`
 
 export const RejectButton = styled.button`
   flex: 1;
-  padding: 0.75rem 1.5rem;
+  padding: 0.5rem 1rem;
   background: linear-gradient(135deg, ${props => props.theme.colors.error} 0%, #dc2626 100%);
   border: none;
   border-radius: 0.75rem;
   color: white;
-  font-size: 1rem;
+  font-size: 0.875rem;
   font-weight: 600;
   cursor: pointer;
   transition: all 0.2s;
@@ -699,5 +713,185 @@ export const ModalSubmitButton = styled.button`
   cursor: pointer;
   &:hover {
     opacity: 0.9;
+  }
+`;
+
+export const SettingsButton = styled.button`
+  width: 100%;
+  padding: 0.75rem 1rem;
+  background: ${props => props.theme.colors.surface};
+  border: 2px solid ${props => props.theme.colors.border};
+  border-radius: 0.75rem;
+  color: ${props => props.theme.colors.textPrimary};
+  font-weight: 600;
+  font-size: 0.9375rem;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  transition: all 0.2s;
+  &:hover {
+    border-color: ${props => props.theme.colors.primary};
+    background: ${props => props.theme.colors.primaryLight};
+    color: ${props => props.theme.colors.primary};
+  }
+`;
+
+export const SettingsMenu = styled.div`
+  position: relative;
+`;
+
+export const SettingsDropdown = styled.div`
+  position: absolute;
+  bottom: 100%;
+  left: 0;
+  right: 0;
+  background: ${props => props.theme.colors.surface};
+  border: 2px solid ${props => props.theme.colors.border};
+  border-radius: 0.75rem;
+  box-shadow: 0 4px 12px ${props => props.theme.colors.shadow};
+  z-index: 100;
+  margin-bottom: 0.5rem;
+  overflow: hidden;
+  display: ${props => props.$isOpen ? 'block' : 'none'};
+`;
+
+export const SettingsMenuItem = styled.button`
+  width: 100%;
+  padding: 0.75rem 1rem;
+  background: transparent;
+  border: none;
+  border-bottom: 1px solid ${props => props.theme.colors.border};
+  color: ${props => props.theme.colors.textPrimary};
+  text-align: left;
+  cursor: pointer;
+  font-size: 0.9375rem;
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  transition: all 0.2s;
+  &:last-child {
+    border-bottom: none;
+  }
+  &:hover {
+    background: ${props => props.theme.colors.surfaceHover};
+    color: ${props => props.theme.colors.primary};
+  }
+`;
+
+export const HeaderToggleButton = styled.button`
+  display: none;
+  position: fixed;
+  bottom: 80px;
+  right: 20px;
+  width: 50px;
+  height: 50px;
+  border-radius: 50%;
+  background: ${props => props.theme.colors.primary};
+  border: none;
+  color: white;
+  font-size: 1.25rem;
+  cursor: pointer;
+  z-index: 100;
+  box-shadow: 0 4px 12px ${props => props.theme.colors.shadow};
+  transition: all 0.2s;
+  &:hover {
+    transform: scale(1.1);
+    box-shadow: 0 6px 16px ${props => props.theme.colors.shadow};
+  }
+  @media (max-width: 768px) {
+    display: ${props => props.$isMinimized ? 'flex' : 'none'};
+    align-items: center;
+    justify-content: center;
+  }
+`;
+
+export const HeaderPopup = styled.div`
+  display: none;
+  position: fixed;
+  bottom: 140px;
+  right: 20px;
+  background: ${props => props.theme.colors.surface};
+  border: 2px solid ${props => props.theme.colors.border};
+  border-radius: 1rem;
+  padding: 1.5rem;
+  width: calc(100% - 40px);
+  max-width: 400px;
+  box-shadow: 0 8px 24px ${props => props.theme.colors.shadow};
+  z-index: 101;
+  animation: slideUp 0.3s ease-out;
+  @keyframes slideUp {
+    from {
+      transform: translateY(20px);
+      opacity: 0;
+    }
+    to {
+      transform: translateY(0);
+      opacity: 1;
+    }
+  }
+  @media (max-width: 768px) {
+    display: ${props => props.$isOpen ? 'block' : 'none'};
+  }
+`;
+
+export const PopupHeader = styled.div`
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1rem;
+  padding-bottom: 1rem;
+  border-bottom: 1px solid ${props => props.theme.colors.border};
+`;
+
+export const PopupTitle = styled.h3`
+  font-size: 1.125rem;
+  font-weight: 700;
+  color: ${props => props.theme.colors.textPrimary};
+  margin: 0;
+`;
+
+export const PopupCloseButton = styled.button`
+  background: none;
+  border: none;
+  color: ${props => props.theme.colors.textSecondary};
+  cursor: pointer;
+  font-size: 1.5rem;
+  padding: 0;
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  &:hover {
+    color: ${props => props.theme.colors.textPrimary};
+  }
+`;
+
+export const PopupContent = styled.div`
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+`;
+
+export const PopupUserInfo = styled.div`
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+`;
+
+export const PopupActions = styled.div`
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  
+  button {
+    padding: 0.5rem 1rem;
+    border: none;
+    border-radius: 0.5rem;
+    cursor: pointer;
+    font-weight: 600;
+    font-size: 0.875rem;
+    transition: all 0.2s;
   }
 `;

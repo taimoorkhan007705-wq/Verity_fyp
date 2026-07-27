@@ -30,6 +30,7 @@ const formatUser = (u, role) => ({
   bio: u.profile_info?.bio || '',
   isBanned: u.trust_security?.isActive === false,
   isVerified: u.trust_security?.isVerified || false,
+  isBlocked: u.trust_security?.isBlocked || false,
   trustScore: u.trust_security?.trustScore || 50,
   followersCount: u.social_stats?.followersCount || 0,
   postsCount: u.social_stats?.postsCount || 0,
@@ -305,4 +306,299 @@ export const seedAdmin = async () => {
       }
 }
 
+// ── Reviewer Requests ────────────────────────────────────
 
+export const getReviewerRequests = async (req, res) => {
+  try {
+    // Get all PENDING reviewer requests
+    const ReviewerRequest = (await import('../../models/ReviewerRequest.js')).default
+    
+    const requests = await ReviewerRequest.find({ status: 'pending' })
+      .populate('user', 'user_info.fullName email profile_info.avatar')
+      .sort({ createdAt: -1 })
+    
+    // Map to response format
+    const formattedRequests = requests.map(req => ({
+      requestId: req._id,
+      userId: req.user._id,
+      user: {
+        fullName: req.user.user_info?.fullName,
+        email: req.user.email,
+        avatar: req.user.profile_info?.avatar
+      },
+      reason: req.reason,
+      requestedAt: req.createdAt
+    }))
+    
+    res.json({ success: true, requests: formattedRequests })
+  } catch (e) {
+    res.status(500).json({ success: false, message: e.message })
+  }
+}
+
+export const approveReviewerRequest = async (req, res) => {
+  try {
+    const { userId } = req.params
+    const ReviewerRequest = (await import('../../models/ReviewerRequest.js')).default
+    
+    // Find the request
+    const request = await ReviewerRequest.findOne({ user: userId, status: 'pending' })
+    if (!request) {
+      return res.status(404).json({ success: false, message: 'Request not found' })
+    }
+    
+    const user = await User.findById(userId)
+    if (!user) {
+      return res.status(404).json({ success: false, message: 'User not found' })
+    }
+    
+    // Create Reviewer account with same email and password
+    const reviewer = await Reviewer.create({
+      email: user.email,
+      password: user.password,
+      role: 'Reviewer',
+      user_info: user.user_info,
+      profile_info: user.profile_info,
+      social_stats: user.social_stats,
+      trust_security: { ...user.trust_security, isActive: true }
+    })
+    
+    // Update request status
+    request.status = 'approved'
+    request.reviewedBy = req.user.id
+    request.reviewedAt = new Date()
+    await request.save()
+    
+    // Create notification
+    await Notification.create({
+      user: user._id,
+      userModel: 'User',
+      type: 'promotion',
+      title: '🎉 Reviewer Request Approved!',
+      message: `Congratulations! Your reviewer request has been approved. You can now login with your email (${user.email}) as a Reviewer and start reviewing posts on the platform.`,
+      relatedUser: reviewer._id
+    })
+    
+    res.json({ success: true, message: 'Request approved and Reviewer account created', reviewer })
+  } catch (e) {
+    res.status(500).json({ success: false, message: e.message })
+  }
+}
+
+export const rejectReviewerRequest = async (req, res) => {
+  try {
+    const { userId } = req.params
+    const { reason } = req.body
+    const ReviewerRequest = (await import('../../models/ReviewerRequest.js')).default
+    
+    // Find the request
+    const request = await ReviewerRequest.findOne({ user: userId, status: 'pending' })
+    if (!request) {
+      return res.status(404).json({ success: false, message: 'Request not found' })
+    }
+    
+    const user = await User.findById(userId)
+    if (!user) {
+      return res.status(404).json({ success: false, message: 'User not found' })
+    }
+    
+    // Update request status
+    request.status = 'rejected'
+    request.reviewedBy = req.user.id
+    request.reviewedAt = new Date()
+    request.rejectionReason = reason || 'Request rejected by admin'
+    await request.save()
+    
+    // Create notification
+    await Notification.create({
+      user: user._id,
+      userModel: 'User',
+      type: 'request_rejected',
+      title: '❌ Reviewer Request Rejected',
+      message: `Your reviewer request has been rejected. Reason: ${reason || 'No reason provided'}. You can apply again later.`,
+    })
+    
+    res.json({ success: true, message: 'Request rejected' })
+  } catch (e) {
+    res.status(500).json({ success: false, message: e.message })
+  }
+}
+
+
+
+// User submits a reviewer request
+export const submitReviewerRequest = async (req, res) => {
+  try {
+    const userId = req.user.id
+    const ReviewerRequest = (await import('../../models/ReviewerRequest.js')).default
+    
+    // Check if user already has a pending request
+    const existingRequest = await ReviewerRequest.findOne({ 
+      user: userId, 
+      status: 'pending' 
+    })
+    
+    if (existingRequest) {
+      return res.status(400).json({ 
+        success: false, 
+        message: 'You already have a pending reviewer request' 
+      })
+    }
+    
+    const user = await User.findById(userId)
+    if (!user) {
+      return res.status(404).json({ success: false, message: 'User not found' })
+    }
+    
+    // Create reviewer request
+    const request = await ReviewerRequest.create({
+      user: userId,
+      email: user.email,
+      fullName: user.user_info?.fullName || user.email,
+      status: 'pending'
+    })
+    
+    res.json({ 
+      success: true, 
+      message: 'Your request has been sent to admin. Please wait for approval.',
+      request 
+    })
+  } catch (e) {
+    res.status(500).json({ success: false, message: e.message })
+  }
+}
+
+// User checks their reviewer request status
+export const checkReviewerRequestStatus = async (req, res) => {
+  try {
+    const userId = req.user.id
+    const ReviewerRequest = (await import('../../models/ReviewerRequest.js')).default
+    
+    const request = await ReviewerRequest.findOne({ user: userId })
+    
+    if (!request) {
+      return res.json({ 
+        success: true, 
+        hasRequest: false,
+        message: 'No request found'
+      })
+    }
+    
+    res.json({ 
+      success: true, 
+      hasRequest: true,
+      request: {
+        status: request.status,
+        createdAt: request.createdAt,
+        reviewedAt: request.reviewedAt,
+        rejectionReason: request.rejectionReason
+      }
+    })
+  } catch (e) {
+    res.status(500).json({ success: false, message: e.message })
+  }
+}
+
+
+// Called during signup if user selects Reviewer role
+export const createReviewerRequestOnSignup = async (req, res) => {
+  try {
+    const userId = req.user.id
+    const ReviewerRequest = (await import('../../models/ReviewerRequest.js')).default
+    
+    const user = await User.findById(userId)
+    if (!user) {
+      return res.status(404).json({ success: false, message: 'User not found' })
+    }
+    
+    // Create reviewer request
+    const request = await ReviewerRequest.create({
+      user: userId,
+      email: user.email,
+      fullName: user.user_info?.fullName || user.email,
+      status: 'pending'
+    })
+    
+    res.json({ 
+      success: true, 
+      message: 'Signup successful! Your reviewer request has been sent to admin. Please wait for approval to access reviewer features.',
+      request 
+    })
+  } catch (e) {
+    res.status(500).json({ success: false, message: e.message })
+  }
+}
+
+// ── block / unblock user ──────────────────────────────────
+export const blockUser = async (req, res) => {
+  try {
+    const { userId } = req.params
+    const { reason } = req.body
+    const found = await findUserAnywhere(userId)
+    if (!found) return res.status(404).json({ success: false, message: 'User not found' })
+    
+    const { user } = found
+    const Model = user.constructor
+    
+    // Check if already blocked
+    if (user.trust_security?.isBlocked) {
+      return res.status(400).json({ success: false, message: 'User is already blocked' })
+    }
+    
+    // Block the user
+    await Model.findByIdAndUpdate(userId, { 
+      'trust_security.isBlocked': true,
+      'trust_security.blockedAt': new Date(),
+      'trust_security.blockedReason': reason || 'Blocked by admin'
+    })
+    
+    // Send notification
+    await Notification.create({
+      user: userId,
+      userModel: found.role,
+      type: 'blocked',
+      title: '🚫 Account Blocked',
+      message: `Your account has been blocked by an administrator. Reason: ${reason || 'Violation of terms'}. You cannot login or access the platform.`
+    })
+    
+    res.json({ success: true, message: 'User blocked successfully' })
+  } catch (e) {
+    res.status(500).json({ success: false, message: e.message })
+  }
+}
+
+export const unblockUser = async (req, res) => {
+  try {
+    const { userId } = req.params
+    const found = await findUserAnywhere(userId)
+    if (!found) return res.status(404).json({ success: false, message: 'User not found' })
+    
+    const { user } = found
+    const Model = user.constructor
+    
+    // Check if not blocked
+    if (!user.trust_security?.isBlocked) {
+      return res.status(400).json({ success: false, message: 'User is not blocked' })
+    }
+    
+    // Unblock the user
+    await Model.findByIdAndUpdate(userId, { 
+      'trust_security.isBlocked': false,
+      'trust_security.blockedAt': null,
+      'trust_security.blockedReason': ''
+    })
+    
+    // Send notification
+    await Notification.create({
+      user: userId,
+      userModel: found.role,
+      type: 'unblocked',
+      title: '✅ Account Unblocked',
+      message: 'Your account has been unblocked by an administrator. You can now login and access the platform.'
+    })
+    
+    res.json({ success: true, message: 'User unblocked successfully' })
+  } catch (e) {
+    res.status(500).json({ success: false, message: e.message })
+  }
+}

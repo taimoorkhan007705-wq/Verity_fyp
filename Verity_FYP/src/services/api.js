@@ -314,6 +314,15 @@ export const getReviewerQueue = async () => {
       },
     });
     const data = await response.json();
+    
+    console.log('[API] getReviewerQueue response:', {
+      status: response.status,
+      hasPostsArray: Array.isArray(data.posts),
+      postsCount: data.posts?.length || 0,
+      firstPostHasMedia: data.posts?.[0]?.media ? true : false,
+      firstPost: data.posts?.[0]
+    })
+    
     if (!response.ok) {
       if (response.status === 404) {
         return await fetchReviewerQueueFromLegacyEndpoint(token);
@@ -404,7 +413,7 @@ export const getPostForReview = async (postId) => {
 export const getReviewerStats = async () => {
   try {
     const token = localStorage.getItem('token');
-    const response = await fetch(`${API_URL}/reviews/stats`, {
+    const response = await fetch(`${API_URL}/reviewer/stats`, {
       method: 'GET',
       headers: {
         'Content-Type': 'application/json',

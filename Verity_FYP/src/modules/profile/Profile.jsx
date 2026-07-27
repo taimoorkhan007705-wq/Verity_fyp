@@ -84,6 +84,28 @@ function Profile() {
     navigate('/profile/edit')
   }
 
+  const handleApplyForReviewer = async () => {
+    try {
+      const token = localStorage.getItem('token')
+      const res = await fetch(`${API_URL}/reviewer-request/submit`, {
+        method: 'POST',
+        headers: { 
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        }
+      })
+      const data = await res.json()
+      if (data.success) {
+        toast.success('Your request has been sent to admin. Please wait for approval.')
+      } else {
+        toast.error(data.message || 'Failed to submit request')
+      }
+    } catch (error) {
+      console.error('Failed to apply for reviewer:', error)
+      toast.error('Failed to submit request')
+    }
+  }
+
   const handlePostClick = (post) => {
     setSelectedPost(post)
     setShowModal(true)
@@ -189,6 +211,11 @@ function Profile() {
         <EditProfileButton onClick={handleEditProfile}>
           Edit Profile
         </EditProfileButton>
+        {user.role !== 'Reviewer' && (
+          <EditProfileButton onClick={handleApplyForReviewer} style={{ backgroundColor: '#6366f1', color: 'white' }}>
+            Apply for Reviewer
+          </EditProfileButton>
+        )}
         <SettingsButton onClick={() => navigate('/settings')}>
           <Settings size={20} />
         </SettingsButton>

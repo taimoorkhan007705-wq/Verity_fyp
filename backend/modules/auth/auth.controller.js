@@ -46,11 +46,16 @@ export const signup = async (req, res) => {
     if (existingUser) {
       return res.status(400).json({ success: false, message: 'Email already exists' })
     }
-    const Model = getModelByRole(role)
+    
+    // If user wants to be a Reviewer, create them as User instead and submit a request
+    const userRole = role === 'Reviewer' ? 'User' : (role || 'User')
+    const shouldRequestReviewer = role === 'Reviewer'
+    
+    const Model = getModelByRole(userRole)
     const userData = {
       email,
       password,
-      role: role || 'User',
+      role: userRole,
       user_info: {
         fullName,
         firstName: fullName.split(' ')[0] || '',
@@ -63,15 +68,15 @@ export const signup = async (req, res) => {
     }
     const user = await Model.create(userData)
 
-    if (user.role === 'Reviewer') {
-      try {
-        const pendingPosts = await Post.find({ verificationStatus: 'awaiting_review' }).select('_id')
-        for (const post of pendingPosts) {
-          await assignReviewersToPost(post._id)
-        }
-      } catch (assignError) {
-        console.warn('Could not assign existing pending review posts to the new reviewer:', assignError.message)
-      }
+    // If user requested Reviewer role, create a reviewer request
+    if (shouldRequestReviewer) {
+      const ReviewerRequest = (await import('../../models/ReviewerRequest.js')).default
+      await ReviewerRequest.create({
+        user: user._id,
+        email: user.email,
+        fullName: user.user_info.fullName,
+        status: 'pending'
+      })
     }
 
     const token = generateToken(user._id, user.role)
@@ -85,7 +90,8 @@ export const signup = async (req, res) => {
         role: user.role,
         avatar: user.profile_info.avatar,
         trustScore: user.trust_security?.trustScore || 50
-      }
+      },
+      message: shouldRequestReviewer ? 'Signup successful! Your reviewer request has been sent to admin. Please wait for approval.' : undefined
     })
   } catch (error) {
     console.error('Signup error:', error)
@@ -141,6 +147,14 @@ export const login = async (req, res) => {
       return res.status(401).json({ 
         success: false, 
         message: 'Incorrect password. Please try again.' 
+      })
+    }
+
+    // Check if user is blocked
+    if (foundUser.trust_security?.isBlocked) {
+      return res.status(403).json({ 
+        success: false, 
+        message: `Your account has been blocked. Reason: ${foundUser.trust_security?.blockedReason || 'Violation of terms'}. Please contact support.` 
       })
     }
 

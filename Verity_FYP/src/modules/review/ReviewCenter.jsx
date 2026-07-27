@@ -1,7 +1,7 @@
 import { API_BASE, API_URL, mediaUrl } from '../../config.js'
 import { useState, useEffect, useMemo } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { CheckCircle, ArrowLeft, Check, X, LogOut, RefreshCw } from 'lucide-react'
+import { CheckCircle, ArrowLeft, Check, X, LogOut, RefreshCw, Settings, Eye, BarChart3, Download, Clock } from 'lucide-react'
 import { getCurrentUser, getReviewerStats, getReviewerQueue, voteOnPost, logout as apiLogout } from '../../services/api'
 import Avatar from '../../components/Avatar/Avatar'
 import {
@@ -52,6 +52,10 @@ import {
   ModalButtons,
   ModalCancelButton,
   ModalSubmitButton,
+  SettingsButton,
+  SettingsMenu,
+  SettingsDropdown,
+  SettingsMenuItem,
 } from './ReviewCenter.styled'
 
 function ReviewCenter() {
@@ -67,6 +71,7 @@ function ReviewCenter() {
   const [loading, setLoading] = useState(true)
   const [refreshing, setRefreshing] = useState(false)
   const [votingInProgress, setVotingInProgress] = useState(false)
+  const [showSettingsMenu, setShowSettingsMenu] = useState(false)
   const [reviewerStats, setReviewerStats] = useState({
     totalReviews: 0,
     approvedReviews: 0,
@@ -109,12 +114,19 @@ function ReviewCenter() {
   const loadReviewerStats = async () => {
     try {
       const response = await getReviewerStats()
+      console.log('[ReviewCenter] Stats response:', response)
+      
+      // Calculate accuracy from approvedCount and rejectedCount
+      const totalVoted = (response.stats?.approvedCount || 0) + (response.stats?.rejectedCount || 0)
+      const accuracy = totalVoted > 0 ? Math.round((response.stats?.approvedCount / totalVoted) * 100) : 0
+      
       setReviewerStats({
-        totalReviews: response.stats?.totalReviews ?? 0,
-        approvedReviews: response.stats?.approvedReviews ?? 0,
-        rejectedReviews: response.stats?.rejectedReviews ?? 0,
-        pendingReviews: response.stats?.pendingReviews ?? 0,
-        accuracy: response.stats?.accuracy ?? user?.trust_security?.trustScore ?? 0
+        totalReviews: response.stats?.reviewsCompleted || 0,
+        approvedReviews: response.stats?.approvedCount || 0,
+        rejectedReviews: response.stats?.rejectedCount || 0,
+        pendingReviews: response.stats?.reviewsPending || 0,
+        accuracy: accuracy,
+        trustScore: user?.trust_security?.trustScore || 0
       })
     } catch (error) {
       console.error('Failed to load reviewer stats:', error)
@@ -156,6 +168,15 @@ function ReviewCenter() {
           const imageUrl = post.media && post.media.length > 0 
             ? mediaUrl(post.media[0].url)
             : null
+          
+          // Debug logging
+          if (post.media && post.media.length > 0) {
+            console.log('[ReviewCenter] Post media:', {
+              media: post.media[0],
+              originalUrl: post.media[0].url,
+              processedUrl: imageUrl
+            })
+          }
  
           const authorAvatar = post.author?.profile_info?.avatar || post.author?.avatar
  
@@ -220,6 +241,46 @@ function ReviewCenter() {
     apiLogout()
     navigate('/')
     window.location.reload()
+  }
+
+  const handleViewStats = () => {
+    setShowSettingsMenu(false)
+    alert('📊 Reviewer Statistics\n\nTotal Reviews: ' + stats.total + '\nApproved: ' + stats.approved + '\nRejected: ' + stats.rejected + '\nAccuracy: ' + stats.accuracy + '%')
+  }
+
+  const handleViewProfile = () => {
+    setShowSettingsMenu(false)
+    navigate(`/profile/${user?.id}`)
+  }
+
+  const handleDownloadReport = () => {
+    setShowSettingsMenu(false)
+    const report = {
+      reviewer: user?.fullName,
+      email: user?.email,
+      trustScore: reviewerStats.accuracy,
+      totalReviews: stats.total,
+      approved: stats.approved,
+      rejected: stats.rejected,
+      timestamp: new Date().toISOString()
+    }
+    const dataStr = JSON.stringify(report, null, 2)
+    const dataBlob = new Blob([dataStr], { type: 'application/json' })
+    const url = URL.createObjectURL(dataBlob)
+    const link = document.createElement('a')
+    link.href = url
+    link.download = `reviewer-report-${Date.now()}.json`
+    link.click()
+    URL.revokeObjectURL(url)
+    alert('✅ Report downloaded successfully!')
+  }
+
+  const handleClearCache = () => {
+    setShowSettingsMenu(false)
+    localStorage.removeItem('token')
+    localStorage.removeItem('user')
+    sessionStorage.clear()
+    alert('✅ Cache cleared! Please refresh the page.')
   }
 
   const filteredPosts = useMemo(() => {
@@ -338,43 +399,7 @@ function ReviewCenter() {
 
   return (
     <ReviewCenterContainer>
-      {}
-      <TopHeader>
-        <HeaderLeft>
-          <HeaderTitle>Reviewer Queue</HeaderTitle>
-        </HeaderLeft>
-        <HeaderRight>
-          <ReviewerInfo>
-            <Avatar
-              src={user?.avatar ? mediaUrl(user.avatar) : undefined}
-              name={user?.fullName || 'User'}
-              alt={user?.fullName || 'User'}
-              size={40}
-            />
-            <ReviewerDetails>
-              <ReviewerName>{user?.fullName}</ReviewerName>
-              <ReviewerRole>Content Reviewer</ReviewerRole>
-            </ReviewerDetails>
-          </ReviewerInfo>
-          <HeaderButton
-            onClick={refreshReviewerDashboard}
-            disabled={refreshing}
-            title="Refresh reviewer queue"
-          >
-            <RefreshCw size={18} style={{ animation: refreshing ? 'spin 1s linear infinite' : 'none' }} />
-            <span>{refreshing ? 'Refreshing...' : 'Refresh'}</span>
-          </HeaderButton>
-          <DangerButton
-            onClick={handleLogout}
-            title="Logout"
-          >
-            <LogOut size={18} />
-            <span>Logout</span>
-          </DangerButton>
-        </HeaderRight>
-      </TopHeader>
-
-      {}
+      {/* Main Content */}
       <ContentWrapper>
         {}
         <ReviewSidebar $isOpen={sidebarOpen}>
@@ -439,6 +464,37 @@ function ReviewCenter() {
               {stats.pending > 0 && <MenuBadge>{stats.pending}</MenuBadge>}
             </SidebarMenuItem>
           </SidebarMenu>
+
+          <SidebarTitle>Settings</SidebarTitle>
+          <SettingsMenu>
+            <SettingsButton onClick={refreshReviewerDashboard} disabled={refreshing}>
+              <RefreshCw size={18} style={{ animation: refreshing ? 'spin 1s linear infinite' : 'none' }} />
+              <span>{refreshing ? 'Refreshing...' : 'Refresh'}</span>
+            </SettingsButton>
+            <SettingsButton onClick={() => setShowSettingsMenu(!showSettingsMenu)}>
+              <Settings size={18} />
+              <span>Options</span>
+            </SettingsButton>
+            <SettingsDropdown $isOpen={showSettingsMenu}>
+              <SettingsMenuItem onClick={handleViewStats}>
+                <BarChart3 size={16} />
+                <span>View Statistics</span>
+              </SettingsMenuItem>
+              <SettingsMenuItem onClick={handleViewProfile}>
+                <Eye size={16} />
+                <span>View Profile</span>
+              </SettingsMenuItem>
+              <SettingsMenuItem onClick={handleDownloadReport}>
+                <Download size={16} />
+                <span>Download Report</span>
+              </SettingsMenuItem>
+              <SettingsMenuItem onClick={handleClearCache}>
+                <Clock size={16} />
+                <span>Clear Cache</span>
+              </SettingsMenuItem>
+            </SettingsDropdown>
+          </SettingsMenu>
+
         </ReviewSidebar>
 
         {}
@@ -450,12 +506,12 @@ function ReviewCenter() {
               <StatValue>{stats.pending}</StatValue>
             </StatCard>
             <StatCard>
-              <StatLabel>Total Voted</StatLabel>
-              <StatValue>{stats.total}</StatValue>
+              <StatLabel>Total Votes Done</StatLabel>
+              <StatValue>{reviewerStats.totalReviews}</StatValue>
             </StatCard>
             <StatCard>
               <StatLabel>Your Trust Score</StatLabel>
-              <StatValue>{reviewerStats.accuracy}%</StatValue>
+              <StatValue>{user?.trust_security?.trustScore || 0}%</StatValue>
             </StatCard>
           </StatsGrid>
           
@@ -495,7 +551,7 @@ function ReviewCenter() {
                   <PostContent>
                     <PostText>{post.text}</PostText>
                     {post.image ? (
-                      <PostImage src={post.image} alt="Post content" />
+                      <PostImage src={post.image} alt="Post content" onError={() => console.log('[ReviewCenter] Image failed to load:', post.image)} onLoad={() => console.log('[ReviewCenter] Image loaded successfully:', post.image)} />
                     ) : (
                       <NoImageState>
                         No image attached

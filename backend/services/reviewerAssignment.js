@@ -317,13 +317,25 @@ export const getReviewerQueue = async (reviewerId) => {
       assignedReviewers: reviewerId,
       verificationStatus: 'awaiting_review'
     })
+      // DO NOT use .select() to limit fields - it breaks media array population
+      // Include all fields so media is properly returned
       .populate('author', 'user_info.fullName email profile_info.avatar trust_security.trustScore social_stats.postsCount')
       .sort({ createdAt: 1 })
       .limit(50)
+    
+    // Filter out posts that this reviewer has already voted on
     const filtered = posts.filter(p => !p.reviewerVotes.some(v => v.reviewer?.toString() === reviewerId.toString()))
-        return filtered
+    
+    // Log for debugging
+    console.log(`[getReviewerQueue] Returned ${filtered.length} posts for reviewer ${reviewerId}`)
+    if (filtered.length > 0 && filtered[0].media) {
+      console.log(`[getReviewerQueue] First post media:`, filtered[0].media)
+    }
+    
+    return filtered
   } catch (error) {
-        throw error
+    console.error('[getReviewerQueue] Error:', error.message)
+    throw error
   }
 }
 

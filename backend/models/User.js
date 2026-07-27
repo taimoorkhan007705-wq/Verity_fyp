@@ -95,6 +95,18 @@ const userSchema = new mongoose.Schema({
       type: Boolean,
       default: true
     },
+    isBlocked: {
+      type: Boolean,
+      default: false
+    },
+    blockedAt: {
+      type: Date,
+      default: null
+    },
+    blockedReason: {
+      type: String,
+      default: ''
+    },
     isPrivate: {
       type: Boolean,
       default: false

@@ -157,7 +157,7 @@ const postSchema = new mongoose.Schema({
     },
     userModel: {
       type: String,
-      enum: ['User', 'Reviewer', 'Business']
+      enum: ['User', 'Reviewer', 'Business', 'Admin']
     },
     createdAt: {
       type: Date,
@@ -175,7 +175,7 @@ const postSchema = new mongoose.Schema({
     },
     userModel: {
       type: String,
-      enum: ['User', 'Reviewer', 'Business']
+      enum: ['User', 'Reviewer', 'Business', 'Admin']
     },
     text: {
       type: String,
@@ -202,7 +202,7 @@ const postSchema = new mongoose.Schema({
     },
     userModel: {
       type: String,
-      enum: ['User', 'Reviewer', 'Business']
+      enum: ['User', 'Reviewer', 'Business', 'Admin']
     },
     createdAt: {
       type: Date,

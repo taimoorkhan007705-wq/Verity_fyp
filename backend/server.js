@@ -70,6 +70,22 @@ app.use('/api/auth', authLimiter)
 // strip $ and . from API request body/query to block NoSQL injection (API routes only)
 app.use('/api', mongoSanitize())
 
+// Add CORS headers for static uploads (images/videos)
+app.use('/uploads', (req, res, next) => {
+  res.setHeader('Access-Control-Allow-Origin', '*')
+  res.setHeader('Access-Control-Allow-Methods', 'GET, HEAD, OPTIONS')
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type')
+  res.setHeader('Cache-Control', 'public, max-age=86400')
+  res.setHeader('X-Content-Type-Options', 'nosniff')
+  // Allow mixed content for images
+  res.setHeader('Content-Security-Policy', "upgrade-insecure-requests")
+  if (req.method === 'OPTIONS') {
+    res.sendStatus(200)
+  } else {
+    next()
+  }
+})
+
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')))
 
 // try multiple DNS servers to work around network restrictions
@@ -165,9 +181,9 @@ const connectMongoDB = async () => {
   console.log('Attempting MongoDB connection using URI:', uriMasked)
 
   const mongooseOptions = {
-    serverSelectionTimeoutMS: 10000,
-    connectTimeoutMS: 10000,
-    socketTimeoutMS: 10000,
+    serverSelectionTimeoutMS: 5000,  // Reduced from default to 5 seconds
+    connectTimeoutMS: 5000,           // Reduced from default to 5 seconds
+    socketTimeoutMS: 5000,            // Reduced from default to 5 seconds
     family: 4  // force IPv4
   }
 

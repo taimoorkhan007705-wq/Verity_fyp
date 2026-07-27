@@ -243,7 +243,8 @@ export const createPost = async (req, res) => {
 
     // For text-only posts, approve immediately
     // For media posts, send straight to reviewer queue so the dashboard can show them
-    const verificationStatus = media.length > 0 ? 'awaiting_review' : 'approved'
+    // For admin posts, always approve immediately - no verification needed
+    const verificationStatus = userRole === 'Admin' ? 'approved' : (media.length > 0 ? 'awaiting_review' : 'approved')
 
     // strip internal fields before saving
     const cleanMedia = media.map(({ _localPath, _mimeType, ...rest }) => rest)
@@ -267,13 +268,15 @@ export const createPost = async (req, res) => {
     await post.populate('author', 'user_info.fullName email profile_info.avatar role')
 
     // Immediately assign all active reviewers for media posts so they appear in the reviewer queue
-    if (media.length > 0) {
+    // But skip for admin posts - they don't need review
+    if (media.length > 0 && userRole !== 'Admin') {
       console.log('[CreatePost] 👥 Assigning reviewers to media post...')
       await assignReviewersToPost(post._id)
     }
 
     // Run AI checks in background (non-blocking) - includes category classification
-    if (media.length > 0 || content) {
+    // But skip for admin posts - they don't need verification
+    if ((media.length > 0 || content) && userRole !== 'Admin') {
       console.log('[CreatePost] 🤖 Triggering background AI processing...')
       // Don't await - let it run in background
       processPostAI(post._id, media, content).catch(err => {
@@ -281,9 +284,11 @@ export const createPost = async (req, res) => {
       })
     }
 
-    const message = media.length > 0 
-      ? 'Your media post has been sent to the reviewer queue for verification.'
-      : 'Post published successfully!'
+    const message = userRole === 'Admin' 
+      ? 'Admin post published successfully - no verification required!'
+      : media.length > 0 
+        ? 'Your media post has been sent to the reviewer queue for verification.'
+        : 'Post published successfully!'
 
     res.status(201).json({
       success: true,
@@ -318,6 +323,24 @@ export const getFeed = async (req, res) => {
       .skip((page - 1) * limit)
       .populate('author', 'user_info.fullName email profile_info.avatar role')
     
+    // Manually populate comments for each post
+    const Reviewer = (await import('../../models/Reviewer.js')).default
+    const Business = (await import('../../models/Business.js')).default
+    const User = (await import('../../models/User.js')).default
+    
+    for (let post of posts) {
+      for (let comment of post.comments) {
+        if (comment.userModel === 'Reviewer') {
+          comment.user = await Reviewer.findById(comment.user).select('user_info profile_info')
+        } else if (comment.userModel === 'Business') {
+          comment.user = await Business.findById(comment.user).select('user_info profile_info')
+        } else {
+          // User and Admin
+          comment.user = await User.findById(comment.user).select('user_info profile_info')
+        }
+      }
+    }
+    
     const count = await Post.countDocuments(query)
     
     res.json({
@@ -334,10 +357,27 @@ export const getPostById = async (req, res) => {
   try {
     const post = await Post.findById(req.params.id)
       .populate('author', 'user_info.fullName email profile_info.avatar role')
-      .populate('comments.user', 'user_info.fullName profile_info.avatar')
+    
     if (!post) {
       return res.status(404).json({ success: false, message: 'Post not found' })
     }
+    
+    // Manually populate comments for this post
+    const Reviewer = (await import('../../models/Reviewer.js')).default
+    const Business = (await import('../../models/Business.js')).default
+    const User = (await import('../../models/User.js')).default
+    
+    for (let comment of post.comments) {
+      if (comment.userModel === 'Reviewer') {
+        comment.user = await Reviewer.findById(comment.user).select('user_info profile_info')
+      } else if (comment.userModel === 'Business') {
+        comment.user = await Business.findById(comment.user).select('user_info profile_info')
+      } else {
+        // User and Admin
+        comment.user = await User.findById(comment.user).select('user_info profile_info')
+      }
+    }
+    
     res.json({ success: true, post })
   } catch (error) {
     res.status(500).json({ success: false, message: 'Failed to fetch post', error: error.message })
@@ -366,19 +406,61 @@ export const likePost = async (req, res) => {
 export const commentOnPost = async (req, res) => {
   try {
     const { text } = req.body
+    
+    if (!text || !text.trim()) {
+      return res.status(400).json({ success: false, message: 'Comment cannot be empty' })
+    }
+    
     const post = await Post.findById(req.params.id)
     if (!post) {
       return res.status(404).json({ success: false, message: 'Post not found' })
     }
+    
+    // Import profanity filter
+    const { filterProfanity } = await import('../utils/profanityFilter.js')
+    
+    // Filter the comment text for profanity
+    const filteredText = filterProfanity(text.trim())
+    
+    // Add comment to post
     post.comments.push({
-      user: req.user.id,
+      user: req.user._id,
       userModel: req.user.role,
-      text
+      text: filteredText
     })
+    
+    // Increment comments count
+    post.commentsCount = post.comments.length
+    
     await post.save()
-    await post.populate('comments.user', 'user_info.fullName profile_info.avatar')
-    res.json({ success: true, comments: post.comments })
+    
+    // Manually populate comments with proper model handling
+    const populatedPost = await Post.findById(req.params.id)
+    
+    // Populate all comments with user info from appropriate models
+    const Reviewer = (await import('../../models/Reviewer.js')).default
+    const Business = (await import('../../models/Business.js')).default
+    const User = (await import('../../models/User.js')).default
+    
+    for (let comment of populatedPost.comments) {
+      if (comment.userModel === 'Reviewer') {
+        comment.user = await Reviewer.findById(comment.user).select('user_info profile_info')
+      } else if (comment.userModel === 'Business') {
+        comment.user = await Business.findById(comment.user).select('user_info profile_info')
+      } else {
+        // User and Admin
+        comment.user = await User.findById(comment.user).select('user_info profile_info')
+      }
+    }
+    
+    res.json({ 
+      success: true, 
+      message: 'Comment posted successfully',
+      comments: populatedPost.comments,
+      commentsCount: populatedPost.commentsCount
+    })
   } catch (error) {
+    console.error('Comment error:', error)
     res.status(500).json({ success: false, message: 'Failed to comment', error: error.message })
   }
 }

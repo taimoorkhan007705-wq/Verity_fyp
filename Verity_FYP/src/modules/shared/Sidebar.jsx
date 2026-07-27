@@ -15,7 +15,8 @@ import {
   ShoppingBag,
   Shield,
   XCircle,
-  X
+  X,
+  AlertTriangle
 } from 'lucide-react'
 import { getCurrentUser, logout as apiLogout } from '../../services/api'
 import NotificationBadge from '../../components/Badge/NotificationBadge'
@@ -96,6 +97,16 @@ function Sidebar({ isOpen, setsidebarOpen }) {
     window.dispatchEvent(new Event('openSettings'))
     handleMenuItemClick()
   }
+  
+  const handlePanelClick = () => {
+    // If already on admin panel, go back
+    if (location.pathname === '/admin') {
+      navigate(-1)
+    } else {
+      navigate('/admin')
+    }
+    handleMenuItemClick()
+  }
   const isFeedActive = location.pathname === '/feed' || location.pathname === '/'
   const isMessagesActive = location.pathname.startsWith('/messages')
   const isConnectionsActive = location.pathname === '/connections'
@@ -105,6 +116,7 @@ function Sidebar({ isOpen, setsidebarOpen }) {
   const isReviewCenterActive = location.pathname === '/review-center'
   const isShoppingActive = location.pathname.startsWith('/shopping')
   const isRejectedActive = location.pathname === '/rejected-posts'
+  const isRequestsActive = location.pathname === '/admin/requests'
   const isReviewer = user?.role === 'Reviewer'
   const isBusiness = user?.role === 'Business'
   const isAdmin = user?.role === 'Admin'
@@ -192,12 +204,6 @@ function Sidebar({ isOpen, setsidebarOpen }) {
               <CreatePost_Button to="/create-post" $isActive={isCreatePostActive} $isOpen={isOpen} onClick={handleMenuItemClick}>
                 <PlusSquare /><span>Create Post</span>
               </CreatePost_Button>
-              <Profile_Button to="/rejected-posts" $isActive={isRejectedActive} $isOpen={isOpen} onClick={handleMenuItemClick}>
-                <NotificationBadge count={badges.unreadRejections}>
-                  <XCircle />
-                </NotificationBadge>
-                <span>Rejected Posts</span>
-              </Profile_Button>
               <Profile_Button to="/profile" $isActive={isProfileActive} $isOpen={isOpen} onClick={handleMenuItemClick}>
                 <User /><span>Profile</span>
               </Profile_Button>
@@ -205,6 +211,9 @@ function Sidebar({ isOpen, setsidebarOpen }) {
                 <Settings />
                 <span>Settings</span>
               </Settings_Button>
+              <Profile_Button to="/admin" $isActive={isRequestsActive} $isOpen={isOpen} onClick={handlePanelClick} as="button">
+                <AlertTriangle /><span>Panel</span>
+              </Profile_Button>
             </>
           )}
           {}
