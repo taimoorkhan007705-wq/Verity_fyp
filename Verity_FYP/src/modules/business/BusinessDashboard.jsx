@@ -73,14 +73,14 @@ const PayCard = ({ icon, title, color, enabled, onToggle, children }) => (
 
 const StatCard = ({ label, value, icon, color, sub }) => (
   <div style={{
-    background:'white', borderRadius:16, padding:'20px 24px',
-    boxShadow:'0 1px 6px rgba(0,0,0,.06)', display:'flex', alignItems:'center', gap:16
+    background:'white', borderRadius:12, padding:'14px 16px',
+    boxShadow:'0 1px 6px rgba(0,0,0,.06)', display:'flex', alignItems:'center', gap:12
   }}>
-    <div style={{ background:`${color}18`, borderRadius:12, padding:12 }}>{icon}</div>
+    <div style={{ background:`${color}18`, borderRadius:10, padding:8, flexShrink:0 }}>{icon}</div>
     <div>
-      <p style={{ margin:0, fontSize:13, color:'#64748b', fontWeight:600 }}>{label}</p>
-      <p style={{ margin:'2px 0 0', fontSize:28, fontWeight:900, color:'#0f172a' }}>{value}</p>
-      {sub && <p style={{ margin:'2px 0 0', fontSize:12, color:'#94a3b8' }}>{sub}</p>}
+      <p style={{ margin:0, fontSize:11, color:'#64748b', fontWeight:600 }}>{label}</p>
+      <p style={{ margin:'2px 0 0', fontSize:22, fontWeight:900, color:'#0f172a' }}>{value}</p>
+      {sub && <p style={{ margin:'2px 0 0', fontSize:10, color:'#94a3b8' }}>{sub}</p>}
     </div>
   </div>
 )
@@ -272,6 +272,19 @@ export default function BusinessDashboard({ onLogout }) {
 
   const pm = (key, field, val) => setPaymentMethods(p => ({ ...p, [key]: { ...p[key], [field]: val } }))
 
+  // Check if mobile
+  const [isMobile, setIsMobile] = useState(window.innerWidth < 768)
+  useEffect(() => {
+    const handleResize = () => setIsMobile(window.innerWidth < 768)
+    window.addEventListener('resize', handleResize)
+    return () => window.removeEventListener('resize', handleResize)
+  }, [])
+
+  // Auto-close sidebar on mobile
+  useEffect(() => {
+    if (isMobile) setSidebarOpen(false)
+  }, [isMobile])
+
   /* ─── styles ──────────────────────────────────────────────── */
   const lbl = { fontSize:11, fontWeight:800, color:'#0f172a', marginBottom:5, display:'block', textTransform:'uppercase' }
   const inp = { width:'100%', padding:'11px 14px', borderRadius:10, border:'1px solid #e2e8f0', outline:'none', boxSizing:'border-box', fontSize:14 }
@@ -286,22 +299,37 @@ export default function BusinessDashboard({ onLogout }) {
 // render
   /* ── RENDER ─────────────────────────────────────────────── */
   return (
-    <div style={{ display:'flex', width:'100vw', height:'100vh', overflow:'hidden', background:T.bg, fontFamily:'system-ui,sans-serif' }}>
+    <div style={{ display:'flex', width:'100%', maxWidth:'100%', height:'100vh', overflow:'hidden', overflowX:'hidden', overflowY:'hidden', background:T.bg, fontFamily:'system-ui,sans-serif' }}>
 
       {/* ── SIDEBAR ─── */}
       <aside style={{
-        width: sidebarOpen ? 260 : 0,
-        minWidth: sidebarOpen ? 260 : 0,
+        width: sidebarOpen ? (isMobile ? '80%' : 260) : 0,
+        minWidth: sidebarOpen ? (isMobile ? '80%' : 260) : 0,
         background:T.dark, color:'white',
         display:'flex', flexDirection:'column',
         padding: sidebarOpen ? '24px 16px' : '24px 0',
-        height:'100vh', transition:'all .25s', overflow:'hidden'
+        height:'100vh', transition:'all .25s', overflow:'hidden',
+        position: isMobile && sidebarOpen ? 'fixed' : 'relative',
+        zIndex: isMobile && sidebarOpen ? 999 : 'auto',
+        inset: isMobile && sidebarOpen ? 0 : 'auto',
+        maxHeight: '100vh', overflowY: 'auto'
       }}>
-        <div style={{ display:'flex', alignItems:'center', gap:10, marginBottom:40 }}>
-          <div style={{ background:T.teal, padding:8, borderRadius:10, flexShrink:0 }}>
-            <TrendingUp size={22} color="white"/>
+        <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', marginBottom:40 }}>
+          <div style={{ display:'flex', alignItems:'center', gap:10 }}>
+            <div style={{ background:T.teal, padding:8, borderRadius:10, flexShrink:0 }}>
+              <TrendingUp size={22} color="white"/>
+            </div>
+            {sidebarOpen && <span style={{ fontWeight:900, fontSize:17, whiteSpace:'nowrap' }}>SELLER STUDIO</span>}
           </div>
-          {sidebarOpen && <span style={{ fontWeight:900, fontSize:17, whiteSpace:'nowrap' }}>SELLER STUDIO</span>}
+          {sidebarOpen && (
+            <button onClick={() => setSidebarOpen(false)} style={{
+              background:'none', border:'none', cursor:'pointer', color:'white',
+              display:'flex', alignItems:'center', justifyContent:'center',
+              padding:'4px', flexShrink:0, transition:'opacity .2s'
+            }}>
+              <X size={24}/>
+            </button>
+          )}
         </div>
         <nav style={{ flex:1 }}>
           {[
@@ -318,63 +346,56 @@ export default function BusinessDashboard({ onLogout }) {
             </div>
           ))}
         </nav>
-        {sidebarOpen && (
-          <div onClick={handleLogout} style={{
-            background:'#f87171', borderRadius:10, padding:'12px 16px',
-            display:'flex', alignItems:'center', gap:8, cursor:'pointer', fontWeight:800, fontSize:14
-          }}>
-            <LogOut size={18}/> Log Out
-          </div>
-        )}
       </aside>
 
       {/* ── MAIN ─── */}
-      <div style={{ flex:1, display:'flex', flexDirection:'column', height:'100vh', overflow:'hidden', minWidth:0 }}>
+      <div style={{ flex:1, display:'flex', flexDirection:'column', height:'100vh', overflow:'hidden', minWidth:0, maxWidth:'100%' }}>
 
         {/* top bar */}
         <header style={{
-          padding:'14px 24px', display:'flex', justifyContent:'space-between',
+          padding: isMobile ? '12px 16px' : '14px 24px', 
+          display:'flex', justifyContent:'space-between',
           alignItems:'center', background:'white', borderBottom:`1px solid ${T.border}`,
-          flexShrink:0, gap:12
+          flexShrink:0, gap:12, flexWrap: isMobile ? 'wrap' : 'nowrap'
         }}>
-          <div style={{ display:'flex', alignItems:'center', gap:12 }}>
+          <div style={{ display:'flex', alignItems:'center', gap:12, flex: isMobile ? 1 : 'auto' }}>
             <button onClick={() => setSidebarOpen(o => !o)} style={{ background:'none', border:'none', cursor:'pointer', color:'#64748b', display:'flex' }}>
               {sidebarOpen ? <ChevronLeft size={22}/> : <Menu size={22}/>}
             </button>
-            <h1 style={{ margin:0, fontSize:18, fontWeight:900, textTransform:'uppercase', color:'#0f172a' }}>
+            <h1 style={{ margin:0, fontSize: isMobile ? 14 : 18, fontWeight:900, textTransform:'uppercase', color:'#0f172a' }}>
               {activeTab === 'overview' ? 'Dashboard' : activeTab === 'inventory' ? 'My Products' : activeTab === 'messages' ? 'Messages' : activeTab === 'payments' ? 'Payment Methods' : 'AI Assistant'}
             </h1>
           </div>
-          <div style={{ display:'flex', gap:10, alignItems:'center' }}>
+          <div style={{ display:'flex', gap:10, alignItems:'center', flex: isMobile ? '0 0 100%' : 'auto', marginTop: isMobile ? '8px' : '0' }}>
             <button onClick={() => setShowAddForm(true)} style={{
               background:T.teal, color:'white', border:'none', borderRadius:10,
-              padding:'9px 16px', fontWeight:800, cursor:'pointer', display:'flex', gap:6, alignItems:'center', fontSize:14
+              padding: isMobile ? '8px 12px' : '9px 16px', fontWeight:800, cursor:'pointer', display:'flex', gap:6, alignItems:'center', fontSize: isMobile ? 12 : 14
             }}>
-              <Plus size={18}/> New Listing
+              <Plus size={16}/> {isMobile ? 'New' : 'New Listing'}
             </button>
             <button onClick={handleLogout} style={{
               background:T.red, color:'white', border:'none', borderRadius:10,
-              padding:'9px 14px', fontWeight:800, cursor:'pointer', display:'flex', gap:6, alignItems:'center', fontSize:14
+              padding: isMobile ? '8px 12px' : '9px 14px', fontWeight:800, cursor:'pointer', display:'flex', gap:6, alignItems:'center', fontSize: isMobile ? 12 : 14
             }}>
-              <LogOut size={16}/>
+              <LogOut size={16}/> {isMobile ? '' : 'Log Out'}
             </button>
           </div>
         </header>
 
         {/* content */}
-        <main style={{ flex:1, overflowY:'auto', padding:'24px' }}>
+        <main style={{ flex:1, overflowY:'auto', overflowX:'hidden', padding: isMobile ? '16px' : '24px', boxSizing:'border-box', maxWidth:'100%' }}>
 
           {/* ── OVERVIEW ── */}
           {activeTab === 'overview' && (
             <div>
-              <div style={{ display:'grid', gridTemplateColumns:'repeat(auto-fill,minmax(200px,1fr))', gap:16, marginBottom:28 }}>
-                <StatCard label="Total Products" value={analytics.totalProducts||products.length} icon={<Package size={22} color={T.teal}/>} color={T.teal} sub="listed products"/>
-                <StatCard label="Total Views"    value={analytics.totalViews||0}     icon={<Eye size={22} color={T.purple}/>}  color={T.purple} sub="across all products"/>
-                <StatCard label="Total Likes"    value={analytics.totalLikes||0}     icon={<Heart size={22} color={T.red}/>}   color={T.red} sub="product likes"/>
-                <StatCard label="Inquiries"      value={analytics.totalInquiries||inquiries.length} icon={<MessageSquare size={22} color={T.amber}/>} color={T.amber} sub="customer messages"/>
+              <div style={{ display:'grid', gridTemplateColumns: isMobile ? '1fr 1fr' : 'repeat(auto-fill,minmax(200px,1fr))', gap:12, marginBottom:20 }}>
+                <StatCard label="Total Products" value={analytics.totalProducts||products.length} icon={<Package size={18} color={T.teal}/>} color={T.teal} sub="listed products"/>
+                <StatCard label="Total Views"    value={analytics.totalViews||0}     icon={<Eye size={18} color={T.purple}/>}  color={T.purple} sub="across all products"/>
+                <StatCard label="Total Likes"    value={analytics.totalLikes||0}     icon={<Heart size={18} color={T.red}/>}   color={T.red} sub="product likes"/>
+                <StatCard label="Inquiries"      value={analytics.totalInquiries||inquiries.length} icon={<MessageSquare size={18} color={T.amber}/>} color={T.amber} sub="customer messages"/>
               </div>
               <h3 style={{ fontWeight:800, fontSize:15, color:'#0f172a', marginBottom:14 }}>Recent Products</h3>
-              <div style={{ display:'grid', gridTemplateColumns:'repeat(auto-fill,minmax(220px,1fr))', gap:16 }}>
+              <div style={{ display:'grid', gridTemplateColumns: isMobile ? '1fr' : 'repeat(auto-fill,minmax(220px,1fr))', gap:16 }}>
                 {products.slice(0,4).map(p => (
                   <div key={p.id} style={{ background:'white', borderRadius:16, overflow:'hidden', boxShadow:'0 1px 6px rgba(0,0,0,.06)' }}>
                     <div style={{ height:130, background:'#f1f5f9', overflow:'hidden' }}>
@@ -422,7 +443,7 @@ export default function BusinessDashboard({ onLogout }) {
                   </button>
                 </div>
               ) : (
-                <div style={{ display:'grid', gridTemplateColumns:'repeat(auto-fill,minmax(240px,1fr))', gap:16 }}>
+                <div style={{ display:'grid', gridTemplateColumns: isMobile ? '1fr' : 'repeat(auto-fill,minmax(240px,1fr))', gap:16 }}>
                   {products.map(p => (
                     <div key={p.id} style={{ background:'white', borderRadius:16, overflow:'hidden', boxShadow:'0 1px 6px rgba(0,0,0,.06)' }}>
                       <div style={{ height:160, background:'#f1f5f9', overflow:'hidden', position:'relative' }}>
@@ -450,10 +471,10 @@ export default function BusinessDashboard({ onLogout }) {
 
           {/* ── MESSAGES ── */}
           {activeTab === 'messages' && (
-            <div style={{ display:'grid', gridTemplateColumns: selectedInquiry ? '1fr 1fr' : '1fr', gap:20, height:'calc(100vh - 160px)' }}>
-              <div style={{ background:'white', borderRadius:20, overflow:'hidden', display:'flex', flexDirection:'column' }}>
+            <div style={{ display:'grid', gridTemplateColumns: selectedInquiry && !isMobile ? '1fr 1fr' : '1fr', gap:20, height:'calc(100vh - 160px)' }}>
+              <div style={{ background:'white', borderRadius:20, overflow:'hidden', display: isMobile && selectedInquiry ? 'none' : 'flex', flexDirection:'column' }}>
                 <div style={{ padding:'16px 20px', borderBottom:`1px solid ${T.border}`, background:'#f8fafc', display:'flex', justifyContent:'space-between', alignItems:'center' }}>
-                  <h2 style={{ margin:0, fontWeight:800, fontSize:16 }}>Customer Inquiries ({inquiries.length})</h2>
+                  <h2 style={{ margin:0, fontWeight:800, fontSize: isMobile ? 14 : 16 }}>Inquiries ({inquiries.length})</h2>
                   <button onClick={loadInquiries} style={{ background:'none', border:'none', cursor:'pointer', color:'#64748b' }}><RefreshCw size={16}/></button>
                 </div>
                 <div style={{ flex:1, overflowY:'auto' }}>
@@ -484,10 +505,10 @@ export default function BusinessDashboard({ onLogout }) {
               {selectedInquiry && (
                 <div style={{ background:'white', borderRadius:20, overflow:'hidden', display:'flex', flexDirection:'column' }}>
                   <div style={{ padding:'16px 20px', borderBottom:`1px solid ${T.border}`, background:'#f8fafc', display:'flex', gap:12, alignItems:'center' }}>
-                    <Avatar src={selectedInquiry.userAvatar} name={selectedInquiry.userName} size={40}/>
+                    <Avatar src={selectedInquiry.userAvatar} name={selectedInquiry.userName} size={isMobile ? 32 : 40}/>
                     <div>
-                      <p style={{ margin:0, fontWeight:800, fontSize:15 }}>{selectedInquiry.userName}</p>
-                      <p style={{ margin:0, fontSize:12, color:'#64748b' }}>{selectedInquiry.userEmail}</p>
+                      <p style={{ margin:0, fontWeight:800, fontSize: isMobile ? 13 : 15 }}>{selectedInquiry.userName}</p>
+                      <p style={{ margin:0, fontSize:12, color:'#64748b' }}>{isMobile ? selectedInquiry.userEmail.split('@')[0] : selectedInquiry.userEmail}</p>
                     </div>
                     <button onClick={() => setSelectedInquiry(null)} style={{ marginLeft:'auto', background:'none', border:'none', cursor:'pointer', color:'#64748b' }}><X size={18}/></button>
                   </div>

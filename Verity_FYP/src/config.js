@@ -5,35 +5,46 @@ const apiBaseEnv = import.meta.env.VITE_API_BASE
 const getApiUrl = () => {
   // If explicitly set in .env and NOT a localhost value, use it (for ngrok and other remote access)
   if (apiUrlEnv && !apiUrlEnv.includes('localhost')) {
+    console.log('[Config] Using VITE_API_URL from .env:', apiUrlEnv)
     return apiUrlEnv
   }
   
   // If accessing through ngrok, use the ngrok origin + /api
   if (typeof window !== 'undefined' && window.location.origin.includes('ngrok')) {
-    return `${window.location.origin}/api`
+    const url = `${window.location.origin}/api`
+    console.log('[Config] Detected ngrok, using:', url)
+    return url
   }
   
   // In development, use relative proxy path
   if (isDev) {
+    console.log('[Config] Development mode, using relative /api')
     return '/api'
   }
   
   // In production, use origin
-  return `${window.location.origin}/api`
+  const url = `${window.location.origin}/api`
+  console.log('[Config] Production mode, using:', url)
+  return url
 }
 
 const getApiBase = () => {
   // If explicitly set in .env and NOT a localhost value, use it
   if (apiBaseEnv && !apiBaseEnv.includes('localhost')) {
+    console.log('[Config] Using VITE_API_BASE from .env:', apiBaseEnv)
     return apiBaseEnv
   }
   
   // Default to current origin (works for both localhost and ngrok)
-  return window.location.origin
+  const origin = typeof window !== 'undefined' ? window.location.origin : 'http://localhost:5000'
+  console.log('[Config] Using API_BASE:', origin)
+  return origin
 }
 
 export const API_BASE = getApiBase()
 export const API_URL = getApiUrl()
+
+console.log('[Config] Initialized - API_BASE:', API_BASE, 'API_URL:', API_URL)
 
 export const mediaUrl = (path) => {
   if (!path) return null
