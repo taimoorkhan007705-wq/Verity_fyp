@@ -25,7 +25,7 @@ import { getActiveToken } from './services/roleSession'
 import Connections from './modules/connections/Connections'
 import Messages from './modules/messages/Messages'
 import AdminDashboard from './modules/admin/AdminDashboard'
-import RejectedPosts from './modules/post/RejectedPosts'
+import RejectedPosts from './modules/feed/RejectedPosts'
 
 // Wrapper component to use hooks inside the provider
 function AppContent() {

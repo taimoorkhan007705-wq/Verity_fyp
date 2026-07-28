@@ -513,8 +513,18 @@ export const getUserPosts = async (req, res) => {
 export const getMyRejectedPosts = async (req, res) => {
   try {
     const userId = req.user.id
-    const posts = await Post.find({ author: userId, isDeleted: false, verificationStatus: 'rejected' })
+    // Get posts that were rejected by AI or by reviewers
+    const posts = await Post.find({
+      author: userId,
+      isDeleted: false,
+      $or: [
+        { verificationStatus: 'ai_rejected' },
+        { verificationStatus: 'rejected' }
+      ]
+    })
       .sort({ createdAt: -1 })
+      .select('content media aiRejectionReason reviewNotes createdAt verificationStatus category')
+    
     res.json({ success: true, posts })
   } catch (error) {
     res.status(500).json({ success: false, message: 'Failed to fetch rejected posts', error: error.message })

@@ -1,6 +1,6 @@
 import { API_BASE, API_URL, mediaUrl } from '../../config.js'
 import { useState, useEffect, useRef } from 'react'
-import { Heart, MessageCircle, Share2, CheckCircle, Send, Trash2, Flag, Image as ImageIcon } from 'lucide-react'
+import { Heart, MessageCircle, Share2, CheckCircle, Send, Trash2, Flag, Image as ImageIcon, AlertCircle } from 'lucide-react'
 import { getFeed } from '../../services/api'
 import { useBadges } from '../../contexts/BadgeContext'
 import { useToast } from '../../contexts/ToastContext'
@@ -352,7 +352,32 @@ function Feed() {
     <FeedContainer>
       <Stories />
       
-      {}
+      {/* Rejected Posts Button - Only show for non-admin */}
+      {!admin && (
+        <div style={{
+          padding: '1rem',
+          marginBottom: '1rem',
+          background: '#fef2f2',
+          border: '2px solid #fecaca',
+          borderRadius: '12px',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          cursor: 'pointer',
+          transition: 'all 0.2s',
+        }}
+        onMouseEnter={(e) => e.currentTarget.style.background = '#fee2e2'}
+        onMouseLeave={(e) => e.currentTarget.style.background = '#fef2f2'}
+        onClick={() => navigate('/rejected-posts')}
+        >
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+            <AlertCircle size={20} color="#dc2626" />
+            <span style={{ fontWeight: 600, color: '#991b1b' }}>View Rejected Posts</span>
+          </div>
+          <span style={{ fontSize: '0.875rem', color: '#7f1d1d' }}>→</span>
+        </div>
+      )}
+      
       <CreatePostSection onClick={() => navigate('/create-post')}>
         <CreatePostInput placeholder="What's on your mind?" readOnly />
         <ImageIcon size={18} style={{ color: '#14b8a6' }} />
