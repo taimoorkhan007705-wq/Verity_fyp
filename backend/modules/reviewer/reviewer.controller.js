@@ -7,8 +7,84 @@ import {
 } from '../../services/reviewerAssignment.js'
 
 /**
- * Get the reviewer's queue - posts awaiting their vote
+ * Get all reviewers with their authentic trust scores
+ * For leaderboard display - calculates scores on-the-fly
  */
+export const getReviewerLeaderboard = async (req, res) => {
+  try {
+    const { calculateReviewerTrustScore } = await import('../../services/reviewerAssignment.js')
+    
+    const reviewers = await Reviewer.find({ 'trust_security.isActive': true })
+      .select('user_info.fullName profile_info.avatar trust_security.trustScore reviewer_stats.reviewsCompleted reviewer_stats.approvedCount')
+      .sort({ 'trust_security.trustScore': -1, 'reviewer_stats.reviewsCompleted': -1 })
+      .limit(100)
+
+    // Calculate authentic trust scores for each reviewer
+    const leaderboard = await Promise.all(reviewers.map(async (reviewer, index) => {
+      // Calculate fresh trust score based on approved posts
+      const authenticTrustScore = await calculateReviewerTrustScore(reviewer._id)
+      
+      return {
+        rank: index + 1,
+        _id: reviewer._id,
+        name: reviewer.user_info.fullName,
+        avatar: reviewer.profile_info.avatar,
+        trustScore: authenticTrustScore,  // Use calculated score, not database value
+        reviewsCompleted: reviewer.reviewer_stats.reviewsCompleted,
+        approvedCount: reviewer.reviewer_stats.approvedCount
+      }
+    }))
+
+    // Re-sort by calculated trust scores
+    leaderboard.sort((a, b) => {
+      if (b.trustScore !== a.trustScore) {
+        return b.trustScore - a.trustScore
+      }
+      return b.reviewsCompleted - a.reviewsCompleted
+    })
+
+    // Update ranks after sorting
+    leaderboard.forEach((reviewer, index) => {
+      reviewer.rank = index + 1
+    })
+
+    res.json({ 
+      success: true, 
+      leaderboard,
+      count: leaderboard.length
+    })
+  } catch (error) {
+    res.status(500).json({ 
+      success: false, 
+      message: 'Failed to fetch leaderboard', 
+      error: error.message 
+    })
+  }
+}
+
+/**
+ * Recalculate trust scores for all reviewers
+ * Admin endpoint - useful for fixing corrupted trust scores
+ */
+export const recalculateTrustScores = async (req, res) => {
+  try {
+    const { success, totalReviewers, updated, message } = await (await import('../../services/reviewerAssignment.js')).recalculateAllReviewerTrustScores()
+
+    res.json({ 
+      success, 
+      totalReviewers, 
+      updated, 
+      message 
+    })
+  } catch (error) {
+    res.status(500).json({ 
+      success: false, 
+      message: 'Failed to recalculate trust scores', 
+      error: error.message 
+    })
+  }
+}
+
 export const getMyQueue = async (req, res) => {
   try {
     const reviewerId = req.user.id
