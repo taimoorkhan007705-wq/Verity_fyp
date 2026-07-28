@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { Award, Settings, X, Lock, Bell, Mail, LogOut, User, Shield } from 'lucide-react'
+import { Award, Settings, X, Lock, Bell, Mail, LogOut, User, Shield, RefreshCw } from 'lucide-react'
 import { getCurrentUser, getReviewerStats, getReviewerLeaderboard } from '../../services/api'
 import Avatar from '../../components/Avatar/Avatar'
 import { mediaUrl, API_BASE } from '../../config.js'
@@ -44,6 +44,7 @@ function RightSidebar() {
   })
   const [leaderboard, setLeaderboard] = useState([])
   const [loadingLeaderboard, setLoadingLeaderboard] = useState(false)
+  const [lastUpdated, setLastUpdated] = useState(null)
 
   // Settings state
   const [settings, setSettings] = useState({
@@ -85,6 +86,7 @@ function RightSidebar() {
       
       if (response?.leaderboard && Array.isArray(response.leaderboard)) {
         setLeaderboard(response.leaderboard)
+        setLastUpdated(new Date())
       } else {
         setLeaderboard([])
       }
@@ -198,6 +200,16 @@ function RightSidebar() {
     return `#${rank}`
   }
 
+  const formatLastUpdated = (date) => {
+    if (!date) return ''
+    const now = new Date()
+    const diff = Math.floor((now - date) / 1000)
+    if (diff < 60) return 'Just now'
+    if (diff < 3600) return `${Math.floor(diff / 60)}m ago`
+    if (diff < 86400) return `${Math.floor(diff / 3600)}h ago`
+    return date.toLocaleDateString()
+  }
+
   return (
     <>
       {/* Right Sidebar */}
@@ -246,7 +258,42 @@ function RightSidebar() {
         {showLeaderboard && isOpen && (
           <LeaderboardContent>
             <LeaderboardHeader>
-              <span>Top Reviewers ({leaderboard.length})</span>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', width: '100%' }}>
+                <span>Top Reviewers ({leaderboard.length})</span>
+                <button
+                  onClick={loadLeaderboard}
+                  disabled={loadingLeaderboard}
+                  style={{
+                    background: 'none',
+                    border: 'none',
+                    cursor: loadingLeaderboard ? 'not-allowed' : 'pointer',
+                    padding: '0.4rem',
+                    borderRadius: '6px',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    transition: 'all 0.2s',
+                    opacity: loadingLeaderboard ? 0.6 : 1,
+                  }}
+                  title="Refresh leaderboard"
+                >
+                  <RefreshCw 
+                    size={16} 
+                    style={{
+                      animation: loadingLeaderboard ? 'spin 1s linear infinite' : 'none'
+                    }}
+                  />
+                </button>
+              </div>
+              {lastUpdated && (
+                <div style={{
+                  fontSize: '0.65rem',
+                  color: '#94a3b8',
+                  marginTop: '0.4rem'
+                }}>
+                  Updated {formatLastUpdated(lastUpdated)}
+                </div>
+              )}
             </LeaderboardHeader>
 
             {/* Current User Stats */}
@@ -567,6 +614,15 @@ function RightSidebar() {
           to {
             transform: translateX(0);
             opacity: 1;
+          }
+        }
+        
+        @keyframes spin {
+          from {
+            transform: rotate(0deg);
+          }
+          to {
+            transform: rotate(360deg);
           }
         }
       `}</style>
