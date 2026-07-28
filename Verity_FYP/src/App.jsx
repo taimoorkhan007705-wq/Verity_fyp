@@ -1,5 +1,5 @@
 import { API_BASE, API_URL } from './config.js'
-import { useState, useEffect } from 'react'
+import { useState, useEffect, lazy, Suspense } from 'react'
 import { Routes, Route, Navigate, useSearchParams } from 'react-router-dom'
 import { ToastProvider, useToast } from './contexts/ToastContext'
 import { ThemeProvider } from './contexts/ThemeContext'
@@ -10,22 +10,39 @@ import ForgotPassword from './modules/auth/ForgotPassword'
 import ForgotPasswordOTP from './modules/auth/ForgotPasswordOTP'
 import ResetPassword from './modules/auth/ResetPassword'
 import Feed from './modules/feed/Feed'
-import CreatePost from './modules/post/CreatePost'
-import ReviewCenter from './modules/review/ReviewCenter'
-import ReviewerLeaderboard from './modules/review/ReviewerLeaderboard'
-import ReviewerManagement from './modules/admin/ReviewerManagement'
-import BusinessDashboard from './modules/business/BusinessDashboard'
-import Profile from './modules/profile/Profile'
-import EditProfile from './modules/profile/EditProfile'
-import Shopping from './modules/shopping/Shopping'
 import Layout from './modules/shared/Layout'
 import ReviewerLayout from './modules/shared/ReviewerLayout'
 import { logout } from './services/api'
 import { getActiveToken } from './services/roleSession'
-import Connections from './modules/connections/Connections'
-import Messages from './modules/messages/Messages'
-import AdminDashboard from './modules/admin/AdminDashboard'
-import RejectedPosts from './modules/feed/RejectedPosts'
+
+// Lazy load heavy components - only load when needed
+const CreatePost = lazy(() => import('./modules/post/CreatePost'))
+const ReviewCenter = lazy(() => import('./modules/review/ReviewCenter'))
+const ReviewerLeaderboard = lazy(() => import('./modules/review/ReviewerLeaderboard'))
+const ReviewerManagement = lazy(() => import('./modules/admin/ReviewerManagement'))
+const BusinessDashboard = lazy(() => import('./modules/business/BusinessDashboard'))
+const Profile = lazy(() => import('./modules/profile/Profile'))
+const EditProfile = lazy(() => import('./modules/profile/EditProfile'))
+const Shopping = lazy(() => import('./modules/shopping/Shopping'))
+const Connections = lazy(() => import('./modules/connections/Connections'))
+const Messages = lazy(() => import('./modules/messages/Messages'))
+const RejectedPosts = lazy(() => import('./modules/feed/RejectedPosts'))
+const AdminDashboard = lazy(() => import('./modules/admin/AdminDashboard'))
+
+// Loading spinner component
+const LoadingSpinner = () => (
+  <div style={{
+    display: 'flex',
+    justifyContent: 'center',
+    alignItems: 'center',
+    minHeight: '400px',
+    color: '#14b8a6',
+    fontSize: '1rem',
+    fontWeight: '600'
+  }}>
+    ⏳ Loading...
+  </div>
+)
 
 // Wrapper component to use hooks inside the provider
 function AppContent() {
@@ -137,41 +154,41 @@ function AppContent() {
           <Route path="/" element={<Layout onLogout={handleLogout} />}>
             <Route index element={<Feed />} />
             <Route path="feed" element={<Feed />} />
-            <Route path="shopping" element={<Shopping />} />
-            <Route path="create-post" element={<CreatePost />} />
-            <Route path="connections" element={<Connections />} />
-            <Route path="discover" element={<Connections />} />
-            <Route path="profile" element={<Profile />} />
-            <Route path="profile/edit" element={<EditProfile />} />
-            <Route path="messages" element={<Messages />} />
-            <Route path="messages/:userId" element={<Messages />} />
-            <Route path="admin" element={<AdminDashboard />} />
-            <Route path="rejected-posts" element={<RejectedPosts />} />
+            <Route path="shopping" element={<Suspense fallback={<LoadingSpinner />}><Shopping /></Suspense>} />
+            <Route path="create-post" element={<Suspense fallback={<LoadingSpinner />}><CreatePost /></Suspense>} />
+            <Route path="connections" element={<Suspense fallback={<LoadingSpinner />}><Connections /></Suspense>} />
+            <Route path="discover" element={<Suspense fallback={<LoadingSpinner />}><Connections /></Suspense>} />
+            <Route path="profile" element={<Suspense fallback={<LoadingSpinner />}><Profile /></Suspense>} />
+            <Route path="profile/edit" element={<Suspense fallback={<LoadingSpinner />}><EditProfile /></Suspense>} />
+            <Route path="messages" element={<Suspense fallback={<LoadingSpinner />}><Messages /></Suspense>} />
+            <Route path="messages/:userId" element={<Suspense fallback={<LoadingSpinner />}><Messages /></Suspense>} />
+            <Route path="admin" element={<Suspense fallback={<LoadingSpinner />}><AdminDashboard /></Suspense>} />
+            <Route path="rejected-posts" element={<Suspense fallback={<LoadingSpinner />}><RejectedPosts /></Suspense>} />
           </Route>
           <Route path="*" element={<Navigate to="/feed" replace />} />
         </Routes>
       ) : user.role === 'Business' ? (
         <Routes>
-          <Route path="/dashboard" element={<BusinessDashboard onLogout={handleLogout} />} />
-          <Route path="/review-center" element={<ReviewCenter />} />
+          <Route path="/dashboard" element={<Suspense fallback={<LoadingSpinner />}><BusinessDashboard onLogout={handleLogout} /></Suspense>} />
+          <Route path="/review-center" element={<Suspense fallback={<LoadingSpinner />}><ReviewCenter /></Suspense>} />
           <Route path="*" element={<Navigate to="/dashboard" replace />} />
         </Routes>
       ) : user.role === 'Reviewer' ? (
         <Routes>
           <Route path="/" element={<ReviewerLayout onLogout={handleLogout} />}>
             <Route index element={<Navigate to="/review-center" replace />} />
-            <Route path="review-center" element={<ReviewCenter />} />
-            <Route path="leaderboard" element={<ReviewerLeaderboard />} />
-            <Route path="all-reviewers" element={<ReviewerManagement />} />
+            <Route path="review-center" element={<Suspense fallback={<LoadingSpinner />}><ReviewCenter /></Suspense>} />
+            <Route path="leaderboard" element={<Suspense fallback={<LoadingSpinner />}><ReviewerLeaderboard /></Suspense>} />
+            <Route path="all-reviewers" element={<Suspense fallback={<LoadingSpinner />}><ReviewerManagement /></Suspense>} />
             <Route path="feed" element={<Feed />} />
-            <Route path="shopping" element={<Shopping />} />
-            <Route path="create-post" element={<CreatePost />} />
-            <Route path="connections" element={<Connections />} />
-            <Route path="discover" element={<Connections />} />
-            <Route path="profile" element={<Profile />} />
-            <Route path="profile/edit" element={<EditProfile />} />
-            <Route path="messages" element={<Messages />} />
-            <Route path="messages/:userId" element={<Messages />} />
+            <Route path="shopping" element={<Suspense fallback={<LoadingSpinner />}><Shopping /></Suspense>} />
+            <Route path="create-post" element={<Suspense fallback={<LoadingSpinner />}><CreatePost /></Suspense>} />
+            <Route path="connections" element={<Suspense fallback={<LoadingSpinner />}><Connections /></Suspense>} />
+            <Route path="discover" element={<Suspense fallback={<LoadingSpinner />}><Connections /></Suspense>} />
+            <Route path="profile" element={<Suspense fallback={<LoadingSpinner />}><Profile /></Suspense>} />
+            <Route path="profile/edit" element={<Suspense fallback={<LoadingSpinner />}><EditProfile /></Suspense>} />
+            <Route path="messages" element={<Suspense fallback={<LoadingSpinner />}><Messages /></Suspense>} />
+            <Route path="messages/:userId" element={<Suspense fallback={<LoadingSpinner />}><Messages /></Suspense>} />
           </Route>
           <Route path="*" element={<Navigate to="/review-center" replace />} />
         </Routes>
@@ -180,15 +197,15 @@ function AppContent() {
           <Route path="/" element={<Layout onLogout={handleLogout} />}>
             <Route index element={<Feed />} />
             <Route path="feed" element={<Feed />} />
-            <Route path="shopping" element={<Shopping />} />
-            <Route path="create-post" element={<CreatePost />} />
-            <Route path="connections" element={<Connections />} />
-            <Route path="discover" element={<Connections />} />
-            <Route path="profile" element={<Profile />} />
-            <Route path="profile/edit" element={<EditProfile />} />
-            <Route path="messages" element={<Messages />} />
-            <Route path="messages/:userId" element={<Messages />} />
-            <Route path="rejected-posts" element={<RejectedPosts />} />
+            <Route path="shopping" element={<Suspense fallback={<LoadingSpinner />}><Shopping /></Suspense>} />
+            <Route path="create-post" element={<Suspense fallback={<LoadingSpinner />}><CreatePost /></Suspense>} />
+            <Route path="connections" element={<Suspense fallback={<LoadingSpinner />}><Connections /></Suspense>} />
+            <Route path="discover" element={<Suspense fallback={<LoadingSpinner />}><Connections /></Suspense>} />
+            <Route path="profile" element={<Suspense fallback={<LoadingSpinner />}><Profile /></Suspense>} />
+            <Route path="profile/edit" element={<Suspense fallback={<LoadingSpinner />}><EditProfile /></Suspense>} />
+            <Route path="messages" element={<Suspense fallback={<LoadingSpinner />}><Messages /></Suspense>} />
+            <Route path="messages/:userId" element={<Suspense fallback={<LoadingSpinner />}><Messages /></Suspense>} />
+            <Route path="rejected-posts" element={<Suspense fallback={<LoadingSpinner />}><RejectedPosts /></Suspense>} />
           </Route>
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>

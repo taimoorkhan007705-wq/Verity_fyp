@@ -31,7 +31,6 @@ function EditProfile() {
     firstName: '',
     lastName: '',
     bio: '',
-    website: '',
     avatar: ''
   })
   const [avatarFile, setAvatarFile] = useState(null)
@@ -54,7 +53,6 @@ function EditProfile() {
         firstName: nameParts[0] || '',
         lastName: nameParts.slice(1).join(' ') || '',
         bio: user.bio || '',
-        website: user.website || '',
         avatar: user.avatar ? `${API_BASE}${user.avatar}` : 'https://via.placeholder.com/150'
       })
     } catch (error) {
@@ -68,7 +66,6 @@ function EditProfile() {
           firstName: user.firstName || '',
           lastName: user.lastName || '',
           bio: user.bio || '',
-          website: user.website || '',
           avatar: user.avatar ? `${API_BASE}${user.avatar}` : 'https://via.placeholder.com/150'
         })
       } catch (apiError) {
@@ -105,7 +102,6 @@ function EditProfile() {
       formDataToSend.append('firstName', formData.firstName)
       formDataToSend.append('lastName', formData.lastName)
       formDataToSend.append('bio', formData.bio)
-      formDataToSend.append('website', formData.website)
       if (avatarFile) {
         formDataToSend.append('avatar', avatarFile)
       }
@@ -204,16 +200,6 @@ function EditProfile() {
             rows={4}
           />
           <CharCount>{formData.bio.length}/150</CharCount>
-        </FormGroup>
-        <FormGroup>
-          <Label>Website</Label>
-          <Input
-            type="url"
-            name="website"
-            value={formData.website}
-            onChange={handleChange}
-            placeholder="https://yourwebsite.com"
-          />
         </FormGroup>
         <ButtonGroup>
           <SaveButton type="submit" disabled={loading}>

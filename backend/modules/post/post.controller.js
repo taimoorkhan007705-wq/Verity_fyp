@@ -308,38 +308,23 @@ export const getFeed = async (req, res) => {
     
     const query = { 
       visibility: 'public',
-      verificationStatus: 'approved'
+      verificationStatus: 'approved',
+      isDeleted: false
     }
     
     // Filter by category if provided and not "All"
     if (category && category !== 'All') {
       query.category = category
     }
-    // "All" shows all categories
     
     const posts = await Post.find(query)
       .sort({ createdAt: -1 })
       .limit(limit * 1)
       .skip((page - 1) * limit)
+      .select('author authorModel content media category likesCount commentsCount sharesCount createdAt')
       .populate('author', 'user_info.fullName email profile_info.avatar role')
-    
-    // Manually populate comments for each post
-    const Reviewer = (await import('../../models/Reviewer.js')).default
-    const Business = (await import('../../models/Business.js')).default
-    const User = (await import('../../models/User.js')).default
-    
-    for (let post of posts) {
-      for (let comment of post.comments) {
-        if (comment.userModel === 'Reviewer') {
-          comment.user = await Reviewer.findById(comment.user).select('user_info profile_info')
-        } else if (comment.userModel === 'Business') {
-          comment.user = await Business.findById(comment.user).select('user_info profile_info')
-        } else {
-          // User and Admin
-          comment.user = await User.findById(comment.user).select('user_info profile_info')
-        }
-      }
-    }
+      .lean() // Use lean for read-only performance
+      .hint({ verificationStatus: 1, createdAt: -1 }) // Use index hint
     
     const count = await Post.countDocuments(query)
     

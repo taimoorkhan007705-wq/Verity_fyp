@@ -74,9 +74,13 @@ const reviewerSchema = new mongoose.Schema({
   trust_security: {
     trustScore: {
       type: Number,
-      default: 50,
+      default: 0,
       min: 0,
       max: 100
+    },
+    trustScoreCalculatedAt: {
+      type: Date,
+      default: Date.now
     },
     isVerified: {
       type: Boolean,
@@ -232,6 +236,13 @@ reviewerSchema.methods.comparePassword = async function(candidatePassword) {
 reviewerSchema.set('toJSON', {
   transform: (doc, ret) => { delete ret.password; return ret }
 });
+
+// Add indexes for faster queries
+reviewerSchema.index({ email: 1 })
+reviewerSchema.index({ 'trust_security.trustScore': -1, 'reviewer_stats.reviewsCompleted': -1 })
+reviewerSchema.index({ 'trust_security.isActive': 1 })
+reviewerSchema.index({ createdAt: -1 })
+
 const Reviewer = mongoose.model('Reviewer', reviewerSchema);
 export default Reviewer;
 

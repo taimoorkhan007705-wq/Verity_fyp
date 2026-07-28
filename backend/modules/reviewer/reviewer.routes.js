@@ -6,12 +6,18 @@ import {
   voteOnPost,
   getMyHistory,
   getMyStats,
-  getAllPendingReviews
+  getAllPendingReviews,
+  getReviewerLeaderboard,
+  recalculateTrustScores
 } from './reviewer.controller.js'
 
 const router = express.Router()
 
-// All routes require authentication and Reviewer role
+// Public routes
+// Get reviewer leaderboard (anyone can view)
+router.get('/leaderboard', getReviewerLeaderboard)
+
+// All routes below require authentication and Reviewer role
 // The auth middleware should check req.user.role === 'Reviewer'
 
 // Get reviewer's queue - posts awaiting their vote
@@ -31,6 +37,9 @@ router.get('/history', protect, restrictTo('Reviewer'), getMyHistory)
 
 // Get reviewer's stats
 router.get('/stats', protect, restrictTo('Reviewer'), getMyStats)
+
+// Admin: Recalculate all trust scores
+router.post('/admin/recalculate-trust-scores', protect, restrictTo('Admin'), recalculateTrustScores)
 
 export default router
 

@@ -1,6 +1,7 @@
 import express from 'express'
 import mongoose from 'mongoose'
 import cors from 'cors'
+import compression from 'compression'
 import dotenv from 'dotenv'
 import dns from 'dns'
 import path from 'path'
@@ -49,6 +50,19 @@ app.use(cors({
     callback(new Error('Not allowed by CORS'), false)
   },
   credentials: true
+}))
+
+// Enable gzip compression for all responses
+app.use(compression({
+  level: 6, // Balance between compression ratio and speed
+  threshold: 1024, // Only compress responses larger than 1KB
+  filter: (req, res) => {
+    // Don't compress if client doesn't accept it
+    if (req.headers['x-no-compression']) {
+      return false
+    }
+    return compression.filter(req, res)
+  }
 }))
 
 app.use(express.json())
@@ -262,12 +276,35 @@ app.use('/api/reviewer', reviewerRoutes)
 app.use('/api/ai', aiRoutes)
 app.use('/api/shop', orderRoutes)
 
-// serve built frontend static assets with correct MIME types
+// serve built frontend static assets with correct MIME types and cache headers
 const frontendDist = path.join(__dirname, '../Verity_FYP/dist')
 app.use(express.static(frontendDist, {
+  maxAge: '1y', // Cache for 1 year (since files have content hashes)
+  etag: false,  // Disable etag, rely on max-age
   setHeaders: (res, filePath) => {
-    if (filePath.endsWith('.js'))  res.setHeader('Content-Type', 'application/javascript')
-    if (filePath.endsWith('.css')) res.setHeader('Content-Type', 'text/css')
+    if (filePath.endsWith('.js')) {
+      res.setHeader('Content-Type', 'application/javascript')
+      // Versioned JS files - cache forever
+      if (filePath.match(/\-[a-zA-Z0-9]{8}\./)) {
+        res.setHeader('Cache-Control', 'public, max-age=31536000, immutable')
+      } else {
+        // Non-versioned JS (unlikely) - short cache
+        res.setHeader('Cache-Control', 'public, max-age=3600')
+      }
+    }
+    if (filePath.endsWith('.css')) {
+      res.setHeader('Content-Type', 'text/css')
+      // Versioned CSS files - cache forever
+      if (filePath.match(/\-[a-zA-Z0-9]{8}\./)) {
+        res.setHeader('Cache-Control', 'public, max-age=31536000, immutable')
+      } else {
+        res.setHeader('Cache-Control', 'public, max-age=3600')
+      }
+    }
+    // HTML files - always revalidate
+    if (filePath.endsWith('.html')) {
+      res.setHeader('Cache-Control', 'public, max-age=3600, must-revalidate')
+    }
   }
 }))
 
@@ -275,6 +312,7 @@ app.use(express.static(frontendDist, {
 app.get('*', (req, res) => {
   const indexPath = path.join(frontendDist, 'index.html')
   if (fs.existsSync(indexPath)) {
+    res.setHeader('Cache-Control', 'public, max-age=3600, must-revalidate')
     res.sendFile(indexPath)
   } else {
     res.json({ message: 'Verity API Server Running' })

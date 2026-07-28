@@ -229,7 +229,7 @@ function PostItem({ post, onRemove }) {
 
       {post.media?.length > 0 && post.media.map((item, idx) =>
         item.type === 'image'
-          ? <PostImage key={idx} src={mediaUrl(item.url)} alt="Post media" />
+          ? <PostImage key={idx} src={mediaUrl(item.url)} alt="Post media" loading="lazy" />
           : <video key={idx} controls style={{ width: '100%', borderRadius: 12, marginBottom: '1rem' }}>
               <source src={mediaUrl(item.url)} />
             </video>

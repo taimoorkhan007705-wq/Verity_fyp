@@ -253,6 +253,15 @@ const postSchema = new mongoose.Schema({
 }, { 
   timestamps: true 
 })
+
+// Add indexes for faster queries
+postSchema.index({ verificationStatus: 1, createdAt: -1 })
+postSchema.index({ author: 1, verificationStatus: 1 })
+postSchema.index({ isDeleted: 1, verificationStatus: 1 })
+postSchema.index({ visibility: 1, verificationStatus: 1 })
+postSchema.index({ category: 1, createdAt: -1 })
+postSchema.index({ createdAt: -1 })
+
 const Post = mongoose.model('Post', postSchema)
 export default Post
 

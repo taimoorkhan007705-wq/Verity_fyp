@@ -249,6 +249,12 @@ userSchema.methods.comparePassword = async function(candidatePassword) {
 userSchema.set('toJSON', {
   transform: (doc, ret) => { delete ret.password; return ret }
 });
+
+// Add indexes for faster queries
+userSchema.index({ email: 1 })
+userSchema.index({ isBlocked: 1 })
+userSchema.index({ createdAt: -1 })
+
 const User = mongoose.model('User', userSchema);
 export default User;
 

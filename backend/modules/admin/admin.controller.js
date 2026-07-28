@@ -184,7 +184,9 @@ export const getReviewerLeaderboard = async (req, res) => {
   try {
     console.log('[GetReviewerLeaderboard] ===== START =====')
     console.log('[GetReviewerLeaderboard] Request URL:', req.originalUrl)
-    console.log('[GetReviewerLeaderboard] Request headers:', req.headers)
+    
+    // Import the calculation function
+    const { calculateReviewerTrustScore } = await import('../../services/reviewerAssignment.js')
     
     // First check if any reviewers exist
     const count = await Reviewer.countDocuments({})
@@ -192,52 +194,65 @@ export const getReviewerLeaderboard = async (req, res) => {
     
     const reviewers = await Reviewer.find({})
       .select('-password')
-      .sort({ 'trust_security.trustScore': -1 })
       .lean()
 
-    console.log('[GetReviewerLeaderboard] Found and sorted reviewers:', reviewers.length)
+    console.log('[GetReviewerLeaderboard] Found reviewers:', reviewers.length)
 
-    if (reviewers.length > 0) {
-      console.log('[GetReviewerLeaderboard] First reviewer:', {
-        fullName: reviewers[0].user_info?.fullName,
-        email: reviewers[0].email,
-        trustScore: reviewers[0].trust_security?.trustScore
-      })
-    }
-
-    const leaderboard = reviewers.map((reviewer, index) => ({
-      rank: index + 1,
-      id: reviewer._id,
-      fullName: reviewer.user_info?.fullName || 'Unknown',
-      email: reviewer.email,
-      avatar: reviewer.profile_info?.avatar || null,
-      bio: reviewer.profile_info?.bio || '',
+    // Calculate authentic trust scores for each reviewer
+    const leaderboard = await Promise.all(reviewers.map(async (reviewer, index) => {
+      // Calculate fresh trust score based on approved posts
+      const authenticTrustScore = await calculateReviewerTrustScore(reviewer._id)
       
-      // Trust & Scoring
-      trustScore: reviewer.trust_security?.trustScore || 50,
-      isVerified: reviewer.trust_security?.isVerified || false,
-      isActive: reviewer.trust_security?.isActive !== false,
-      
-      // Reviewer Stats
-      reviewsCompleted: reviewer.reviewer_stats?.reviewsCompleted || 0,
-      reviewsPending: reviewer.reviewer_stats?.reviewsPending || 0,
-      accuracy: reviewer.reviewer_stats?.accuracy || 0,
-      approvedCount: reviewer.reviewer_stats?.approvedCount || 0,
-      rejectedCount: reviewer.reviewer_stats?.rejectedCount || 0,
-      
-      // Activity
-      expertise: reviewer.reviewer_profile?.expertiseLevel || 'Junior',
-      specialization: reviewer.reviewer_profile?.specialization || ['General'],
-      lastReviewAt: reviewer.activity_tracking?.lastReviewAt || null,
-      joinedAt: reviewer.createdAt,
+      return {
+        rank: 0, // Will be updated after sorting
+        id: reviewer._id,
+        fullName: reviewer.user_info?.fullName || 'Unknown',
+        email: reviewer.email,
+        avatar: reviewer.profile_info?.avatar || null,
+        bio: reviewer.profile_info?.bio || '',
+        
+        // Trust & Scoring - Use calculated score
+        trustScore: authenticTrustScore,
+        isVerified: reviewer.trust_security?.isVerified || false,
+        isActive: reviewer.trust_security?.isActive !== false,
+        
+        // Reviewer Stats
+        reviewsCompleted: reviewer.reviewer_stats?.reviewsCompleted || 0,
+        reviewsPending: reviewer.reviewer_stats?.reviewsPending || 0,
+        accuracy: reviewer.reviewer_stats?.accuracy || 0,
+        approvedCount: reviewer.reviewer_stats?.approvedCount || 0,
+        rejectedCount: reviewer.reviewer_stats?.rejectedCount || 0,
+        
+        // Activity
+        expertise: reviewer.reviewer_profile?.expertiseLevel || 'Junior',
+        specialization: reviewer.reviewer_profile?.specialization || ['General'],
+        lastReviewAt: reviewer.activity_tracking?.lastReviewAt || null,
+        joinedAt: reviewer.createdAt,
+      }
     }))
 
+    // Sort by calculated trust scores descending
+    leaderboard.sort((a, b) => {
+      if (b.trustScore !== a.trustScore) {
+        return b.trustScore - a.trustScore
+      }
+      return b.reviewsCompleted - a.reviewsCompleted
+    })
+
+    // Update ranks after sorting
+    leaderboard.forEach((reviewer, index) => {
+      reviewer.rank = index + 1
+    })
+
     console.log('[GetReviewerLeaderboard] Returning leaderboard with', leaderboard.length, 'reviewers')
-    console.log('[GetReviewerLeaderboard] Response object:', JSON.stringify({ 
-      success: true, 
-      total: leaderboard.length,
-      leaderboard: leaderboard.slice(0, 1) // log first one only
-    }, null, 2))
+    if (leaderboard.length > 0) {
+      console.log('[GetReviewerLeaderboard] First reviewer:', {
+        rank: leaderboard[0].rank,
+        fullName: leaderboard[0].fullName,
+        trustScore: leaderboard[0].trustScore,
+        reviewsCompleted: leaderboard[0].reviewsCompleted
+      })
+    }
 
     const response = { 
       success: true, 
@@ -261,20 +276,62 @@ export const getReviewerLeaderboard = async (req, res) => {
 // ── get all posts ─────────────────────────────────────────
 export const getAllPosts = async (req, res) => {
   try {
-    const posts = await Post.find({ isDeleted: false })
+    const { page = 1, limit = 20, status } = req.query
+    
+    const query = { isDeleted: false }
+    
+    // Optional filter by verification status
+    if (status && status !== 'all') {
+      query.verificationStatus = status
+    }
+    
+    const posts = await Post.find(query)
       .sort({ createdAt: -1 })
+      .limit(limit * 1)
+      .skip((page - 1) * limit)
+      .select('author authorModel content media category verificationStatus createdAt likesCount commentsCount')
       .populate('author', 'user_info.fullName email profile_info.avatar role')
-      .limit(200)
-    res.json({ success: true, posts })
+      .lean()
+    
+    const count = await Post.countDocuments(query)
+    
+    res.json({ 
+      success: true, 
+      posts,
+      totalPages: Math.ceil(count / limit),
+      currentPage: page,
+      total: count
+    })
   } catch (e) { res.status(500).json({ success: false, message: e.message }) }
 }
 
 export const getAdminFeed = async (req, res) => {
   try {
-    const posts = await Post.find({ isDeleted: false })
+    const { page = 1, limit = 10 } = req.query
+    
+    // Exclude rejected and ai_rejected posts - admin only sees approved posts
+    const posts = await Post.find({ 
+      isDeleted: false,
+      verificationStatus: { $nin: ['rejected', 'ai_rejected'] }
+    })
       .sort({ createdAt: -1 })
+      .limit(limit * 1)
+      .skip((page - 1) * limit)
+      .select('author authorModel content media category verificationStatus createdAt likes comments shares')
       .populate('author', 'user_info.fullName email profile_info.avatar role')
-    res.json({ success: true, posts })
+      .lean() // Use lean() for better performance on read-only queries
+    
+    const count = await Post.countDocuments({ 
+      isDeleted: false,
+      verificationStatus: { $nin: ['rejected', 'ai_rejected'] }
+    })
+    
+    res.json({ 
+      success: true, 
+      posts,
+      totalPages: Math.ceil(count / limit),
+      currentPage: page
+    })
   } catch (e) { res.status(500).json({ success: false, message: e.message }) }
 }
 

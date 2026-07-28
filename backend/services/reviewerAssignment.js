@@ -3,6 +3,117 @@ import Post from '../models/Post.js'
 import Notification from '../models/Notification.js'
 
 /**
+ * Calculate authentic trust score based on posts approved by reviewer
+ * that are now visible on the feed (posted/approved)
+ * 
+ * Trust Score = (ApprovedPostsOnFeed / TotalReviewsCompleted) * 100
+ * 
+ * @param {string} reviewerId - The reviewer's ID
+ * @returns {Promise<number>} - Calculated trust score (0-100)
+ */
+export const calculateReviewerTrustScore = async (reviewerId) => {
+  try {
+    // Get all posts approved by this reviewer
+    const approvedPosts = await Post.find({
+      verificationStatus: 'approved',
+      'reviewerVotes.reviewer': reviewerId,
+      'reviewerVotes.vote': 'approve'
+    })
+
+    if (approvedPosts.length === 0) {
+      return 0 // No reviews yet, trust score is 0
+    }
+
+    // Count how many of those approved posts are actually on the feed
+    // (i.e., have been created/visible to users - not deleted or hidden)
+    const approvedPostsOnFeed = approvedPosts.filter(post => {
+      return post.verificationStatus === 'approved' && !post.isDeleted
+    }).length
+
+    // Get total reviews completed by this reviewer
+    const reviewer = await Reviewer.findById(reviewerId).select('reviewer_stats')
+    const totalReviews = reviewer?.reviewer_stats?.reviewsCompleted || 0
+
+    if (totalReviews === 0) {
+      return 0
+    }
+
+    // Calculate trust score: (approved posts on feed / total reviews) * 100
+    // Caps at 100
+    const trustScore = Math.min(100, Math.round((approvedPostsOnFeed / totalReviews) * 100))
+
+    console.log(`[TrustScore] Reviewer ${reviewerId}: ${approvedPostsOnFeed}/${totalReviews} = ${trustScore}%`)
+
+    return trustScore
+  } catch (error) {
+    console.error('[CalculateTrustScore] Error:', error.message)
+    return 0
+  }
+}
+
+/**
+ * Update reviewer's trust score in database
+ * Called whenever a post they approved gets posted to feed
+ * 
+ * @param {string} reviewerId - The reviewer's ID
+ * @returns {Promise<number>} - Updated trust score
+ */
+export const updateReviewerTrustScore = async (reviewerId) => {
+  try {
+    const trustScore = await calculateReviewerTrustScore(reviewerId)
+
+    await Reviewer.findByIdAndUpdate(reviewerId, {
+      'trust_security.trustScore': trustScore,
+      'trust_security.trustScoreCalculatedAt': new Date()
+    })
+
+    console.log(`[UpdateTrustScore] Reviewer ${reviewerId} trust score updated to ${trustScore}%`)
+
+    return trustScore
+  } catch (error) {
+    console.error('[UpdateTrustScore] Error:', error.message)
+    return 0
+  }
+}
+
+/**
+ * Recalculate trust scores for ALL reviewers
+ * Run this periodically or after major changes
+ * 
+ * @returns {Promise<Object>} - Summary with updated reviewers
+ */
+export const recalculateAllReviewerTrustScores = async () => {
+  try {
+    const reviewers = await Reviewer.find({ 'trust_security.isActive': true })
+
+    let updated = 0
+    for (const reviewer of reviewers) {
+      const newTrustScore = await calculateReviewerTrustScore(reviewer._id)
+      
+      if (newTrustScore !== reviewer.trust_security.trustScore) {
+        await Reviewer.findByIdAndUpdate(reviewer._id, {
+          'trust_security.trustScore': newTrustScore,
+          'trust_security.trustScoreCalculatedAt': new Date()
+        })
+        updated++
+      }
+    }
+
+    console.log(`[RecalculateAllTrustScores] Updated ${updated} reviewers out of ${reviewers.length}`)
+
+    return {
+      success: true,
+      totalReviewers: reviewers.length,
+      updated,
+      message: `Trust scores recalculated for ${updated} reviewers`
+    }
+  } catch (error) {
+    console.error('[RecalculateAllTrustScores] Error:', error.message)
+    return { success: false, error: error.message }
+  }
+}
+
+/**
  * Assign all active reviewers to a post
  * Ensures every active reviewer receives awaiting-review posts
  * and only increments pending counts for newly assigned reviewers
@@ -205,23 +316,19 @@ export const processReviewerVote = async (postId, reviewerId, vote, reasoning = 
 
       console.log(`[ReviewerVote] ✅ Post ${postId} APPROVED (${approveCount} approve votes)`)
       
-      // Update reviewer stats for all who voted
+      // Update reviewer stats and trust scores for all who voted
       for (const voteEntry of post.reviewerVotes) {
-        // If reviewer voted 'approve' and decision is 'approved' → they voted correctly!
-        const votedCorrectly = voteEntry.vote === 'approve'
-        const trustScoreIncrease = votedCorrectly ? 5 : -2 // +5 for correct vote, -2 for incorrect
-        
-        console.log(`[ReviewerVote] Reviewer ${voteEntry.reviewer} vote: ${voteEntry.vote}, Correct: ${votedCorrectly}, Trust change: ${trustScoreIncrease}`)
-        
         await Reviewer.findByIdAndUpdate(voteEntry.reviewer, {
           $inc: { 
             'reviewer_stats.reviewsCompleted': 1,
             'reviewer_stats.reviewsPending': -1,
-            'reviewer_stats.approvedCount': voteEntry.vote === 'approve' ? 1 : 0,
-            'trust_security.trustScore': trustScoreIncrease  // Increase or decrease trust score
+            'reviewer_stats.approvedCount': voteEntry.vote === 'approve' ? 1 : 0
           },
           'activity_tracking.lastReviewAt': new Date()
         })
+        
+        // Recalculate authentic trust score based on approved posts on feed
+        await updateReviewerTrustScore(voteEntry.reviewer)
       }
 
     } else if (rejectCount >= 2) {
@@ -238,23 +345,19 @@ export const processReviewerVote = async (postId, reviewerId, vote, reasoning = 
 
       console.log(`[ReviewerVote] ❌ Post ${postId} REJECTED (${rejectCount} reject votes)`)
       
-      // Update reviewer stats for all who voted
+      // Update reviewer stats and trust scores for all who voted
       for (const voteEntry of post.reviewerVotes) {
-        // If reviewer voted 'reject' and decision is 'rejected' → they voted correctly!
-        const votedCorrectly = voteEntry.vote === 'reject'
-        const trustScoreIncrease = votedCorrectly ? 5 : -2 // +5 for correct vote, -2 for incorrect
-        
-        console.log(`[ReviewerVote] Reviewer ${voteEntry.reviewer} vote: ${voteEntry.vote}, Correct: ${votedCorrectly}, Trust change: ${trustScoreIncrease}`)
-        
         await Reviewer.findByIdAndUpdate(voteEntry.reviewer, {
           $inc: { 
             'reviewer_stats.reviewsCompleted': 1,
             'reviewer_stats.reviewsPending': -1,
-            'reviewer_stats.rejectedCount': voteEntry.vote === 'reject' ? 1 : 0,
-            'trust_security.trustScore': trustScoreIncrease  // Increase or decrease trust score
+            'reviewer_stats.rejectedCount': voteEntry.vote === 'reject' ? 1 : 0
           },
           'activity_tracking.lastReviewAt': new Date()
         })
+        
+        // Recalculate authentic trust score based on approved posts on feed
+        await updateReviewerTrustScore(voteEntry.reviewer)
       }
 
     } else {
