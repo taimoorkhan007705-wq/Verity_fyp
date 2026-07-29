@@ -81,6 +81,14 @@ const Signup = () => {
       console.log('Signing up with role:', userData.role)
       const response = await signup(userData)
       console.log('Signup response:', response)
+      
+      // If reviewer request is pending approval
+      if (response.waitingForApproval) {
+        alert('Your reviewer request has been submitted to the admin. Please wait for approval before you can login.')
+        navigate('/')
+        return
+      }
+      
       alert(`Account created! Welcome ${response.user.fullName} as ${response.user.role}`)
       if (response.user.role === 'Business') {
         window.location.href = '/dashboard'

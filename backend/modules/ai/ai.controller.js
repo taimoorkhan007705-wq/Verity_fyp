@@ -1,9 +1,9 @@
 import { ollamaChat, ollamaGenerate, ollamaHealth } from '../../services/ollamaService.js'
 
-// System prompt that gives the AI context about Verity
-const SYSTEM_PROMPT = `You are Verity Assistant, an AI helper for the Verity social media platform. 
+// System prompt that gives the  context about Verity
+const SYSTEM_PROMPT = `You are Verity Assistant, an  helper for the Verity social media platform. 
 You help users with questions about products, posts, fact-checking, and general assistance.
-Be concise, helpful, and friendly. Keep responses under 200 words unless more detail is needed.`
+Be concise, helpful, and friendly. Keep responses under 200 words unless more detl is needed.`
 
 export const chat = async (req, res) => {
   try {
@@ -22,8 +22,8 @@ export const chat = async (req, res) => {
     const reply = await ollamaChat(messages)
     res.json({ success: true, reply, model: 'llama3.2' })
   } catch (error) {
-    console.error('AI chat error:', error.message)
-    res.status(500).json({ success: false, message: 'AI service unavailable', error: error.message })
+    console.error(' chat error:', error.message)
+    res.status(500).json({ success: false, message: ' service unavlable', error: error.message })
   }
 }
 
@@ -36,8 +36,8 @@ export const generate = async (req, res) => {
     const response = await ollamaGenerate(prompt.trim())
     res.json({ success: true, response, model: 'llama3.2' })
   } catch (error) {
-    console.error('AI generate error:', error.message)
-    res.status(500).json({ success: false, message: 'AI service unavailable', error: error.message })
+    console.error(' generate error:', error.message)
+    res.status(500).json({ success: false, message: ' service unavlable', error: error.message })
   }
 }
 

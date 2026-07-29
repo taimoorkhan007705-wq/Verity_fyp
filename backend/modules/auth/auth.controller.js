@@ -79,6 +79,15 @@ export const signup = async (req, res) => {
       })
     }
 
+    // Don't return token if requesting reviewer role - they must wait for admin approval
+    if (shouldRequestReviewer) {
+      return res.status(201).json({
+        success: true,
+        message: 'Signup successful! Your reviewer request has been sent to admin. Please wait for approval before you can login.',
+        waitingForApproval: true
+      })
+    }
+
     const token = generateToken(user._id, user.role)
     res.status(201).json({
       success: true,
@@ -90,8 +99,7 @@ export const signup = async (req, res) => {
         role: user.role,
         avatar: user.profile_info.avatar,
         trustScore: user.trust_security?.trustScore || 50
-      },
-      message: shouldRequestReviewer ? 'Signup successful! Your reviewer request has been sent to admin. Please wait for approval.' : undefined
+      }
     })
   } catch (error) {
     console.error('Signup error:', error)
