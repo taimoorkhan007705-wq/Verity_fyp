@@ -50,35 +50,24 @@ export const lightTheme = {
 export const darkTheme = {
   mode: 'dark',
   colors: {
-    // Backgrounds
     background: '#0f172a',
     surface: '#1e293b',
     surfaceHover: '#334155',
-    
-    // Text
     textPrimary: '#f1f5f9',
     textSecondary: '#cbd5e1',
     textTertiary: '#94a3b8',
-    
-    // Borders
     border: '#334155',
     borderLight: '#475569',
-    
-    // Brand colors
     primary: '#14b8a6',
     primaryHover: '#0d9488',
     primaryLight: '#134e4a',
-    
-    // Status colors
     success: '#10b981',
     error: '#ef4444',
     warning: '#f59e0b',
     info: '#3b82f6',
-    
-    // Shadows
     shadow: 'rgba(0, 0, 0, 0.3)',
     shadowMedium: 'rgba(0, 0, 0, 0.4)',
-    shadowHeavy: 'rgba(0, 0, 0, 0.5)',
+    shadowHeavy: 'rgba(0, 0, 0, 0.5)'
   }
 }
 

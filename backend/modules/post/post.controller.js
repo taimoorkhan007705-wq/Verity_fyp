@@ -100,21 +100,30 @@ const processPostAI = async (postId, mediaFiles, captionText) => {
 
     // SEND TO REVIEWERS: Suspicious content or flagged by AI
     if (fakeDetectionResult.verdict === 'suspicious' || fakeDetectionResult.isAIGenerated) {
-      verificationStatus = 'awaiting_review'
-      pendingReason = fakeDetectionResult.reason
+      console.log('[ProcessPostAI] ⚠️  Suspicious content detected - auto-rejecting...')
+      verificationStatus = 'ai_rejected'
+      aiRejectionReason = fakeDetectionResult.reason
       
-      const post = await Post.findById(postId)
+      const post = await Post.findById(postId).populate('author', 'email user_info.fullName')
       if (post) {
         post.verificationStatus = verificationStatus
-        post.pendingReason = pendingReason
+        post.aiRejectionReason = aiRejectionReason
         post.aiDetectionScore = aiDetectionScore
         post.aiDetectionVerdict = aiDetectionVerdict
+        post.reviewNotes = `AI Suspicious Content: ${aiRejectionReason}`
         await post.save()
         
-        // Assign all active reviewers to this post
-        await assignReviewersToPost(postId)
-              }
-      return // Stop here - post is now in reviewer queue
+        // Notify user
+        await Notification.create({
+          user: post.author._id,
+          userModel: post.authorModel,
+          type: 'post_rejected',
+          title: '⚠️ Post Rejected - Suspicious Content',
+          message: `Your post was automatically rejected. Reason: ${aiRejectionReason}`,
+          relatedPost: postId
+        })
+      }
+      return // Stop here - post is rejected
     }
 
     // ═══════════════════════════════════════════════════════════════
@@ -191,7 +200,7 @@ const processPostAI = async (postId, mediaFiles, captionText) => {
     // If AI check fails, send to reviewers for manual review
     try {
       const post = await Post.findById(postId)
-      if (post && post.verificationStatus === 'pending') {
+      if (post && (post.verificationStatus === 'pending' || post.verificationStatus === 'awaiting_ai_detection')) {
         post.verificationStatus = 'awaiting_review'
         post.pendingReason = 'AI check failed - manual review required'
         await post.save()
@@ -241,10 +250,10 @@ export const createPost = async (req, res) => {
     const selectedCategory = allowedCategories.includes(category) ? category : initialCategory
     const categorySource = allowedCategories.includes(category) ? 'User selected category' : 'Quick keyword-based classification'
 
-    // For text-only posts, approve immediately
-    // For media posts, send straight to reviewer queue so the dashboard can show them
+    // For text-only posts, send to AI detection
+    // For media posts, run AI check first before sending to reviewers
     // For admin posts, always approve immediately - no verification needed
-    const verificationStatus = userRole === 'Admin' ? 'approved' : (media.length > 0 ? 'awaiting_review' : 'approved')
+    const verificationStatus = userRole === 'Admin' ? 'approved' : 'awaiting_ai_detection'
 
     // strip internal fields before saving
     const cleanMedia = media.map(({ _localPath, _mimeType, ...rest }) => rest)
@@ -267,14 +276,8 @@ export const createPost = async (req, res) => {
 
     await post.populate('author', 'user_info.fullName email profile_info.avatar role')
 
-    // Immediately assign all active reviewers for media posts so they appear in the reviewer queue
-    // But skip for admin posts - they don't need review
-    if (media.length > 0 && userRole !== 'Admin') {
-      console.log('[CreatePost] 👥 Assigning reviewers to media post...')
-      await assignReviewersToPost(post._id)
-    }
-
-    // Run AI checks in background (non-blocking) - includes category classification
+    // Don't assign reviewers here - let processPostAI decide after AI checks
+    // Only run AI checks in background (non-blocking)
     // But skip for admin posts - they don't need verification
     if ((media.length > 0 || content) && userRole !== 'Admin') {
       console.log('[CreatePost] 🤖 Triggering background AI processing...')

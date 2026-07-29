@@ -309,10 +309,12 @@ export const getAdminFeed = async (req, res) => {
   try {
     const { page = 1, limit = 10 } = req.query
     
-    // Exclude rejected and ai_rejected posts - admin only sees approved posts
+    // Admin sees the same feed as users - approved posts only
+    // Exclude: rejected, ai_rejected, pending, awaiting_review, awaiting_ai_detection
     const posts = await Post.find({ 
-      isDeleted: false,
-      verificationStatus: { $nin: ['rejected', 'ai_rejected'] }
+      visibility: 'public',
+      verificationStatus: 'approved',
+      isDeleted: false
     })
       .sort({ createdAt: -1 })
       .limit(limit * 1)
@@ -322,8 +324,9 @@ export const getAdminFeed = async (req, res) => {
       .lean() // Use lean() for better performance on read-only queries
     
     const count = await Post.countDocuments({ 
-      isDeleted: false,
-      verificationStatus: { $nin: ['rejected', 'ai_rejected'] }
+      visibility: 'public',
+      verificationStatus: 'approved',
+      isDeleted: false
     })
     
     res.json({ 

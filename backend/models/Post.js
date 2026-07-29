@@ -66,7 +66,7 @@ const postSchema = new mongoose.Schema({
   },
   verificationStatus: {
     type: String,
-    enum: ['pending', 'approved', 'rejected', 'ai_rejected', 'awaiting_review'],
+    enum: ['pending', 'approved', 'rejected', 'ai_rejected', 'awaiting_review', 'awaiting_ai_detection'],
     default: 'pending'
   },
   isVerified: {

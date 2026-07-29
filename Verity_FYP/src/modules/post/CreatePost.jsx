@@ -210,8 +210,8 @@ function CreatePost() {
       const response = await createPost(formData)
       
       // Show appropriate toast based on response
-      if (response.verificationStatus === 'pending' || response.verificationStatus === 'awaiting_review') {
-        toast.info(response.message || 'Your post is under review, please wait a moment')
+      if (response.verificationStatus === 'pending' || response.verificationStatus === 'awaiting_review' || response.verificationStatus === 'awaiting_ai_detection') {
+        toast.info(response.message || 'Your post is sent for verification, please wait')
       } else if (response.verificationStatus === 'approved') {
         toast.success(response.message || 'Post published successfully!')
       } else {

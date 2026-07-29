@@ -164,7 +164,7 @@ const Login = () => {
                 onClick={() => navigate('/forgot-password-otp')}
                 style={{ marginLeft: 'auto' }}
               >
-                Forgot password?
+                Forgot pad?
               </SignUpLink>
             </RememberMeContainer>
             <SignInButton type="submit" disabled={loading}>
