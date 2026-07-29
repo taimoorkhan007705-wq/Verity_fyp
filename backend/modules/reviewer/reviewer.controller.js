@@ -331,3 +331,95 @@ export const getAllPendingReviews = async (req, res) => {
 }
 
 
+
+
+/**
+ * User submits a reviewer request (from settings/profile)
+ */
+export const submitReviewerRequest = async (req, res) => {
+  try {
+    const userId = req.user.id
+    const ReviewerRequest = (await import('../../models/ReviewerRequest.js')).default
+    
+    // Check if user already has a pending request
+    const existingRequest = await ReviewerRequest.findOne({ 
+      user: userId, 
+      status: 'pending' 
+    })
+    
+    if (existingRequest) {
+      return res.status(400).json({ 
+        success: false, 
+        message: 'You already have a pending reviewer request' 
+      })
+    }
+    
+    // Check if already approved
+    const approvedRequest = await ReviewerRequest.findOne({ 
+      user: userId, 
+      status: 'approved' 
+    })
+    
+    if (approvedRequest) {
+      return res.status(400).json({ 
+        success: false, 
+        message: 'Your reviewer request has already been approved' 
+      })
+    }
+    
+    const User = (await import('../../models/User.js')).default
+    const user = await User.findById(userId)
+    if (!user) {
+      return res.status(404).json({ success: false, message: 'User not found' })
+    }
+    
+    // Create reviewer request
+    const request = await ReviewerRequest.create({
+      user: userId,
+      email: user.email,
+      fullName: user.user_info?.fullName || user.email,
+      status: 'pending'
+    })
+    
+    res.json({ 
+      success: true, 
+      message: 'Your reviewer request has been submitted to admin for approval.',
+      request 
+    })
+  } catch (e) {
+    res.status(500).json({ success: false, message: e.message })
+  }
+}
+
+/**
+ * User checks their reviewer request status
+ */
+export const checkReviewerRequestStatus = async (req, res) => {
+  try {
+    const userId = req.user.id
+    const ReviewerRequest = (await import('../../models/ReviewerRequest.js')).default
+    
+    const request = await ReviewerRequest.findOne({ user: userId })
+    
+    if (!request) {
+      return res.json({ 
+        success: true, 
+        hasRequest: false,
+        message: 'No request found'
+      })
+    }
+    
+    res.json({ 
+      success: true, 
+      hasRequest: true,
+      request: {
+        status: request.status,
+        createdAt: request.createdAt,
+        reviewedAt: request.reviewedAt,
+        rejectionReason: request.rejectionReason
+      }
+    })
+  } catch (e) {
+    res.status(500).json({ success: false, message: e.message })
+  }
+}

@@ -78,26 +78,39 @@ const Signup = () => {
     setLoading(true)
     try {
       const { confirmPassword: _confirmPassword, ...userData } = formData
-      console.log('Signing up with role:', userData.role)
+      console.log('=== SIGNUP START ===')
+      console.log('Requested role:', userData.role)
       const response = await signup(userData)
-      console.log('Signup response:', response)
+      console.log('Backend response:', JSON.stringify(response, null, 2))
+      console.log('Has waitingForApproval:', response.waitingForApproval)
+      console.log('Has token:', !!response.token)
       
-      // If reviewer request is pending approval
-      if (response.waitingForApproval) {
-        alert('Your reviewer request has been submitted to the admin. Please wait for approval before you can login.')
-        navigate('/')
-        return
+      // REVIEWER REQUEST LOGIC - Check first!
+      if (userData.role === 'Reviewer') {
+        console.log('USER REQUESTED REVIEWER ROLE')
+        // For reviewer requests, backend should NOT return token
+        if (!response.token) {
+          console.log('✅ No token returned - showing reviewer request message')
+          alert(`🎉 Thank you for signing up as a Reviewer!\n\nYour request has been submitted to our admin team. We will review your application and notify you via email once it's approved.\n\nYou will be able to login as a Reviewer once your request is approved.`)
+          navigate('/')
+          return
+        } else {
+          console.log('❌ ERROR: Token was returned for reviewer request!')
+        }
       }
       
-      alert(`Account created! Welcome ${response.user.fullName} as ${response.user.role}`)
-      if (response.user.role === 'Business') {
+      // NORMAL USER/BUSINESS LOGIC
+      console.log('Processing as normal user/business signup')
+      alert(`✅ Welcome ${response.user?.fullName || 'User'}!\n\nYour account has been created successfully!`)
+      if (response.user?.role === 'Business') {
         window.location.href = '/dashboard'
-      } else if (response.user.role === 'Reviewer') {
+      } else if (response.user?.role === 'Reviewer') {
         window.location.href = '/review-center'
       } else {
         window.location.href = '/feed'
       }
     } catch (error) {
+      console.error('Signup error:', error)
       setError(error.message || 'Signup failed')
     } finally {
       setLoading(false)

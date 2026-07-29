@@ -8,7 +8,9 @@ import {
   getMyStats,
   getAllPendingReviews,
   getReviewerLeaderboard,
-  recalculateTrustScores
+  recalculateTrustScores,
+  submitReviewerRequest,
+  checkReviewerRequestStatus
 } from './reviewer.controller.js'
 
 const router = express.Router()
@@ -16,6 +18,10 @@ const router = express.Router()
 // Public routes
 // Get reviewer leaderboard (anyone can view)
 router.get('/leaderboard', getReviewerLeaderboard)
+
+// User request endpoints (authenticated but not necessarily Reviewer)
+router.post('/request', protect, submitReviewerRequest)
+router.get('/check-request-status', protect, checkReviewerRequestStatus)
 
 // All routes below require authentication and Reviewer role
 // The auth middleware should check req.user.role === 'Reviewer'

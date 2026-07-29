@@ -1,7 +1,7 @@
 import { API_BASE, API_URL } from '../../config.js'
 import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { Camera, ArrowLeft } from 'lucide-react'
+import { Camera, ArrowLeft, Star } from 'lucide-react'
 import { getCurrentUser, getProfile, updateProfile } from '../../services/api'
 import ImageCropper from '../../components/ImageCropper/ImageCropper'
 import { loadImageFile, validateImageDimensions } from '../../utils/imageUploadHandler'
@@ -36,10 +36,64 @@ function EditProfile() {
   const [avatarFile, setAvatarFile] = useState(null)
   const [loading, setLoading] = useState(false)
   const [cropperImage, setCropperImage] = useState(null)
+  const [requestingReviewer, setRequestingReviewer] = useState(false)
+  const [reviewerRequestStatus, setReviewerRequestStatus] = useState(null)
   const toast = useToast()
+  
   useEffect(() => {
     loadProfile()
+    checkReviewerRequestStatus()
   }, [])
+  
+  const checkReviewerRequestStatus = async () => {
+    try {
+      const token = localStorage.getItem('token')
+      if (!token) return
+      
+      const response = await fetch(`${API_URL}/reviewer/check-request-status`, {
+        method: 'GET',
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      })
+      const data = await response.json()
+      if (data.success && data.hasRequest) {
+        setReviewerRequestStatus(data.request.status)
+      }
+    } catch (error) {
+      console.error('Failed to check reviewer request status:', error)
+    }
+  }
+  
+  const handleRequestReviewer = async () => {
+    try {
+      setRequestingReviewer(true)
+      const token = localStorage.getItem('token')
+      
+      const response = await fetch(`${API_URL}/reviewer/request`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        }
+      })
+      
+      const data = await response.json()
+      
+      if (!response.ok) {
+        throw new Error(data.message || 'Failed to submit reviewer request')
+      }
+      
+      setReviewerRequestStatus('pending')
+      toast.success('Reviewer request submitted! Admin will review your application.')
+      alert('Your reviewer request has been submitted to the admin for approval.\n\nYou will receive an email notification once your request is reviewed.')
+    } catch (error) {
+      toast.error(error.message || 'Failed to submit reviewer request')
+      alert(`Error: ${error.message}`)
+    } finally {
+      setRequestingReviewer(false)
+    }
+  }
   const loadProfile = async () => {
     try {
       // ALWAYS use getCurrentUser() first (from localStorage)
@@ -208,6 +262,84 @@ function EditProfile() {
           <CancelButton type="button" onClick={() => navigate('/profile')}>
             Cancel
           </CancelButton>
+          {!reviewerRequestStatus && (
+            <button
+              type="button"
+              onClick={handleRequestReviewer}
+              disabled={requestingReviewer}
+              style={{
+                backgroundColor: '#14b8a6',
+                color: 'white',
+                border: 'none',
+                borderRadius: '8px',
+                padding: '10px 16px',
+                fontWeight: '600',
+                fontSize: '0.9rem',
+                cursor: requestingReviewer ? 'not-allowed' : 'pointer',
+                opacity: requestingReviewer ? 0.6 : 1,
+                display: 'flex',
+                alignItems: 'center',
+                gap: '6px'
+              }}
+            >
+              <Star size={16} />
+              {requestingReviewer ? 'Submitting...' : 'Request as Reviewer'}
+            </button>
+          )}
+          {reviewerRequestStatus === 'pending' && (
+            <button
+              type="button"
+              disabled
+              style={{
+                backgroundColor: '#fef3c7',
+                color: '#b45309',
+                border: 'none',
+                borderRadius: '8px',
+                padding: '10px 16px',
+                fontWeight: '600',
+                fontSize: '0.9rem',
+                cursor: 'not-allowed'
+              }}
+            >
+              ⏳ Request Pending
+            </button>
+          )}
+          {reviewerRequestStatus === 'approved' && (
+            <button
+              type="button"
+              disabled
+              style={{
+                backgroundColor: '#dcfce7',
+                color: '#15803d',
+                border: 'none',
+                borderRadius: '8px',
+                padding: '10px 16px',
+                fontWeight: '600',
+                fontSize: '0.9rem',
+                cursor: 'not-allowed'
+              }}
+            >
+              ✅ Request Approved
+            </button>
+          )}
+          {reviewerRequestStatus === 'rejected' && (
+            <button
+              type="button"
+              disabled
+              style={{
+                backgroundColor: '#fee2e2',
+                color: '#dc2626',
+                border: 'none',
+                borderRadius: '8px',
+                padding: '10px 16px',
+                fontWeight: '600',
+                fontSize: '0.9rem',
+                cursor: 'not-allowed'
+              }}
+            >
+              ❌ Request Rejected
+            </button>
+          )}
         </ButtonGroup>
       </EditForm>
     </EditContainer>

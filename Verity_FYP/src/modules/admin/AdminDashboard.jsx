@@ -249,7 +249,7 @@ export default function AdminDashboard() {
                               </div>
                             </td>
                             <td style={{ padding:"12px 16px", fontSize:"0.85rem", color:"#64748b", minWidth:"180px" }}>{req.user?.email}</td>
-                            <td style={{ padding:"12px 16px" }}><span style={{ backgroundColor:"#fef3c720", color:"#f59e0b", fontSize:"0.75rem", fontWeight:700, padding:"3px 10px", borderRadius:20 }}>User</span></td>
+                            <td style={{ padding:"12px 16px" }}><span style={{ backgroundColor:"#fef3c720", color:"#f59e0b", fontSize:"0.75rem", fontWeight:700, padding:"3px 10px", borderRadius:20 }}>Reviewer</span></td>
                             <td style={{ padding:"12px 16px", fontSize:"0.85rem", color:"#94a3b8" }}>{new Date(req.requestedAt).toLocaleDateString()}</td>
                             <td style={{ padding:"12px 16px" }}>
                               <div style={{ display:"flex", gap:"0.5rem" }}>
